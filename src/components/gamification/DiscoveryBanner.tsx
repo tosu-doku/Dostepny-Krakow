@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { UserRank, KRAKOW_GRID_CONFIG } from '@/services/grid';
-import { Trophy, Compass, Camera, Sparkles, Eye, EyeOff, Info, X } from 'lucide-react';
+import { Trophy, Compass, Camera, Eye, EyeOff, Info, X } from 'lucide-react';
 
 interface DiscoveryBannerProps {
   userRank: UserRank | null;
