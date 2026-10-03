@@ -92,13 +92,13 @@ export default function AddBarrierForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-sm flex flex-col gap-4"
+      className="p-3.5 sm:p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-sm flex flex-col gap-3.5 sm:gap-4"
       aria-label="Formularz zgłaszania bariery architektonicznej"
     >
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+            <PlusCircle className="w-5 h-5 text-indigo-600 shrink-0" aria-hidden="true" />
             Zgłoś Barierę (Crowdsourcing)
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -108,24 +108,24 @@ export default function AddBarrierForm({
       </div>
 
       {/* Wybór Lokalizacji */}
-      <div className="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded border border-zinc-200 dark:border-zinc-700 text-xs">
-        <div className="flex items-center justify-between mb-1">
+      <div className="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs">
+        <div className="flex items-center justify-between mb-1.5">
           <span className="font-semibold text-zinc-700 dark:text-zinc-300">Lokalizacja zgłoszenia:</span>
           <button
             type="button"
             onClick={onSelectCurrentLocation}
-            className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 cursor-pointer"
+            className="min-h-[34px] px-2.5 py-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded hover:bg-blue-100 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
           >
             <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-            Użyj mojej pozycji GPS
+            Użyj GPS
           </button>
         </div>
         {selectedLocation ? (
-          <p className="text-zinc-900 dark:text-zinc-100 font-mono">
-            {selectedLocation.lat.toFixed(5)}, {selectedLocation.lng.toFixed(5)} (kliknięto na mapie)
+          <p className="text-zinc-900 dark:text-zinc-100 font-mono text-xs">
+            {selectedLocation.lat.toFixed(5)}, {selectedLocation.lng.toFixed(5)} (wybrano punkt)
           </p>
         ) : (
-          <p className="text-zinc-500 italic">Kliknij na mapie w miejscu przeszkody, aby wskazać punkt.</p>
+          <p className="text-zinc-500 italic">Dotknij mapy lub kliknij „Użyj GPS”.</p>
         )}
       </div>
 
@@ -138,7 +138,7 @@ export default function AddBarrierForm({
           id="barrier-type"
           value={barrierType}
           onChange={(e) => setBarrierType(e.target.value as BarrierType)}
-          className="w-full text-xs p-2.5 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+          className="w-full min-h-[44px] text-sm sm:text-xs p-2.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
         >
           <option value="STAIRS">Schody (stopnie)</option>
           <option value="HIGH_KERB">Wysoki krawężnik</option>

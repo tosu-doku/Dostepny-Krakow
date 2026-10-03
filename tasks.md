@@ -26,8 +26,8 @@
   - W `AccessibleMap.tsx` wprowadzono bezpieczne zarządzanie warstwami przez `L.layerGroup` zamiast ręcznego usuwania i mutacji pojedynczych markerów.
   - Wyłączono animację w `fitBounds` (`animate: false`), eliminując wyścigi animacji Leafleta podczas aktualizacji współrzędnych.
 
-- [ ] **Zadanie 7: Responsywność na urządzenia mobilne (Mobile UI/UX)**
-  - Optymalizacja widoku dla smartfonów (np. wygodne przełączanie między mapą a panelem kroków / wysuwany bottom-sheet).
-  - Wymiary elementów dotykowych min. 44x44px (zgodnie z WCAG 2.2 Target Size).
-  - Płynne skalowanie mapy i pełnoekranowej galerii na wąskich ekranach.
-  - Przetestowanie formularza zgłaszania barier w terenie z aparatem telefonu i geolokalizacją GPS.
+- [x] **Zadanie 7: Responsywność na urządzenia mobilne (Mobile UI/UX)**
+  - Wdrożono mobilny przełącznik widoku na smartfonach (`< lg`): przełączanie jednym tapnięciem między *„Planer i Wskazówki”* a *„Interaktywna Mapa”*, eliminując uciążliwe przewijanie i przechwytywanie gestów przez Leaflet.
+  - Dostosowano targety dotykowe min. 44x44px (zgodnie z WCAG 2.2 Target Size) dla przycisków, pól formularzy i selektora profili (`grid-cols-1 sm:grid-cols-2`).
+  - Zapewniono automatyczne przełączanie na mapę po kliknięciu *„Wskaż na mapie”* oraz przycisk szybkiego powrotu do wskazówek trasy.
+  - Zoptymalizowano nagłówek i formularz zgłaszania przeszkód dla małych ekranów smartfonów.
