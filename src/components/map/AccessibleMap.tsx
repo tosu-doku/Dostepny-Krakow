@@ -36,21 +36,47 @@ export default function AccessibleMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
+  // Callback refs to prevent remounting map when parent functions change
+  const onMapClickRef = useRef(onMapClick);
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
+
+  const onSelectBarrierRef = useRef(onSelectBarrier);
+  useEffect(() => {
+    onSelectBarrierRef.current = onSelectBarrier;
+  }, [onSelectBarrier]);
+
+  const onTileClickRef = useRef(onTileClick);
+  useEffect(() => {
+    onTileClickRef.current = onTileClick;
+  }, [onTileClick]);
+
   // Dedicated layer groups for clean, crash-free Leaflet updates
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const discoveryLayerRef = useRef<L.LayerGroup | null>(null);
   const prevRouteKeyRef = useRef<string>('');
 
-  // 1. Initialize Map
+  // 1. Initialize Map ONCE
   useEffect(() => {
-    if (!mapContainerRef.current || mapInstanceRef.current) return;
+    if (!mapContainerRef.current) return;
+    if (mapInstanceRef.current) return;
+
+    // Prevent container reuse issues in React StrictMode / HMR
+    if ((mapContainerRef.current as any)._leaflet_id) {
+      delete (mapContainerRef.current as any)._leaflet_id;
+    }
 
     // Center on Krakow (Rynek Główny)
+    // zoomAnimation: false completely disables CSS transitionend race condition (_leaflet_pos)
     const map = L.map(mapContainerRef.current, {
       center: [50.0614, 19.9365],
       zoom: 14,
       zoomControl: true,
+      zoomAnimation: false,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -65,8 +91,8 @@ export default function AccessibleMap({
     discoveryLayerRef.current = L.layerGroup().addTo(map);
 
     map.on('click', (e: L.LeafletMouseEvent) => {
-      if (onMapClick) {
-        onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+      if (onMapClickRef.current) {
+        onMapClickRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
       }
     });
 
@@ -83,13 +109,36 @@ export default function AccessibleMap({
 
     return () => {
       try {
+        map.stop();
+        map.off();
         map.remove();
       } catch {
         // Safe cleanup
       }
       mapInstanceRef.current = null;
     };
-  }, [onMapClick]);
+  }, []);
+
+  // Invalidate map size whenever container is resized or toggled visible
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        try {
+          mapInstanceRef.current.invalidateSize();
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // 2. Update Route Layer & Markers Layer
   useEffect(() => {
@@ -207,16 +256,18 @@ export default function AccessibleMap({
         title: `Bariera: ${b.barrier_type} (${b.address_description || ''})`,
       }).bindPopup(popupHtml);
 
-      if (onSelectBarrier) {
-        marker.on('click', () => onSelectBarrier(b));
-      }
+      marker.on('click', () => {
+        if (onSelectBarrierRef.current) {
+          onSelectBarrierRef.current(b);
+        }
+      });
 
       marker.addTo(markersLayer);
     });
 
     // Auto-fit bounds only when route coordinates key changes
     const currentRouteKey = routeCoordinates.length > 0
-      ? `${routeCoordinates[0][0]},${routeCoordinates[0][1]}-${routeCoordinates[routeCoordinates.length - 1][0]}`
+      ? `${routeCoordinates[0][0]},${routeCoordinates[0][1]}-${routeCoordinates[routeCoordinates.length - 1][0]}-${routeCoordinates.length}`
       : '';
 
     if (newBounds && newBounds.isValid() && currentRouteKey !== prevRouteKeyRef.current) {
@@ -232,7 +283,7 @@ export default function AccessibleMap({
         console.warn('fitBounds warning:', err);
       }
     }
-  }, [start, end, routeCoordinates, barriers, selectedLocation, onSelectBarrier]);
+  }, [start, end, routeCoordinates, barriers, selectedLocation]);
 
   // 3. Update Fog of War / Exploration Grid Layer
   useEffect(() => {
@@ -285,16 +336,16 @@ export default function AccessibleMap({
         { sticky: true }
       );
 
-      if (onTileClick) {
-        rect.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          onTileClick(tileId);
-        });
-      }
+      rect.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        if (onTileClickRef.current) {
+          onTileClickRef.current(tileId);
+        }
+      });
 
       rect.addTo(discoveryLayer);
     }
-  }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds, onTileClick]);
+  }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds]);
 
   return (
     <div

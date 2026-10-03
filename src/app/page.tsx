@@ -184,8 +184,8 @@ export default function Home() {
 
       // Stay on navigation tab
       setActiveTab('navigation');
-      // On mobile, show the route report
-      setMobileView('panel');
+      // On mobile, show the route on the map
+      setMobileView('map');
     } catch (err: any) {
       setErrorMessage(err.message || 'Wystąpił nieoczekiwany błąd');
     } finally {
@@ -194,7 +194,7 @@ export default function Home() {
   };
 
   // Handle Map Click - does NOT switch tab when on navigation!
-  const handleMapClick = (coords: { lat: number; lng: number }) => {
+  const handleMapClick = useCallback((coords: { lat: number; lng: number }) => {
     if (activeTab === 'navigation') {
       if (pickingTarget === 'start') {
         setStartPoint(coords);
@@ -216,7 +216,7 @@ export default function Home() {
       setPickedLocation(coords);
       setMobileView('panel');
     }
-  };
+  }, [activeTab, pickingTarget]);
 
   // Handle Geolocation
   const handleUseCurrentLocation = () => {
