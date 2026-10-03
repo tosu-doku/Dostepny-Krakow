@@ -9,6 +9,8 @@ import RoutePlanner from '@/components/navigation/RoutePlanner';
 import RouteObstacleList from '@/components/navigation/RouteObstacleList';
 import AddBarrierForm from '@/components/crowdsourcing/AddBarrierForm';
 import UserAccountMenu from '@/components/auth/UserAccountMenu';
+import DiscoveryBanner from '@/components/gamification/DiscoveryBanner';
+import { routeToTiles, coordsToTile, calculateUserRank, UserRank } from '@/services/grid';
 import { ShieldCheck, Map as MapIcon, PlusCircle, AlertCircle, Compass, ListFilter } from 'lucide-react';
 
 // Dynamically import Leaflet Map to prevent SSR errors
@@ -42,6 +44,12 @@ export default function Home() {
   const [pickingTarget, setPickingTarget] = useState<'start' | 'end' | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
+  // Fog of War / Map Discovery Gamification state
+  const [discoveredTileIds, setDiscoveredTileIds] = useState<string[]>([]);
+  const [auditedTileIds, setAuditedTileIds] = useState<string[]>([]);
+  const [userRank, setUserRank] = useState<UserRank | null>(null);
+  const [showDiscoveryGrid, setShowDiscoveryGrid] = useState<boolean>(true);
+
   // Fetch barriers from API
   const fetchBarriers = useCallback(async () => {
     try {
@@ -55,13 +63,67 @@ export default function Home() {
     }
   }, []);
 
+  // Fetch discovery tiles for current user (or guest)
+  const fetchDiscoveryTiles = useCallback(async () => {
+    try {
+      const url = currentUser?.id ? `/api/discovery/my-tiles?user_id=${currentUser.id}` : '/api/discovery/my-tiles';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const tiles = data.tiles || [];
+        const disc: string[] = tiles.map((t: any) => t.tile_id);
+        const audited: string[] = tiles
+          .filter((t: any) => t.has_photo_contribution)
+          .map((t: any) => t.tile_id);
+        setDiscoveredTileIds(disc);
+        setAuditedTileIds(audited);
+        const rank = calculateUserRank(disc.length, audited.length);
+        setUserRank(rank);
+      }
+    } catch (err) {
+      console.warn('Nie udało się pobrać kafli eksploracji:', err);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    fetchDiscoveryTiles();
+  }, [fetchDiscoveryTiles]);
+
+  // Gamification: Unlock barrier tile with photo bonus (+100 XP / Golden tile)
+  const handleBarrierCreatedDiscovery = async (lat: number, lng: number, hasPhoto: boolean) => {
+    const tile = coordsToTile(lat, lng);
+    if (!tile) return;
+
+    try {
+      const res = await fetch('/api/discovery/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: currentUser?.id,
+          tile_ids: [tile.tileId],
+          has_photo: hasPhoto,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user_rank) {
+          setUserRank(data.user_rank);
+        }
+        fetchDiscoveryTiles();
+      }
+    } catch (err) {
+      console.warn('Błąd podczas odblokowywania kafelka po zgłoszeniu bariery:', err);
+    }
+  };
+
   // Handle Purge Bad Actor callback
   const handlePurgeComplete = useCallback((_result: BadActorPurgeResult) => {
     fetchBarriers();
+    fetchDiscoveryTiles();
     if (startPoint && endPoint) {
       handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
     }
-  }, [fetchBarriers, startPoint, endPoint, route?.profile]);
+  }, [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile]);
 
   useEffect(() => {
     fetchBarriers();
@@ -92,6 +154,34 @@ export default function Home() {
 
       const data: RouteResult = await res.json();
       setRoute(data);
+
+      // Gamification: Unlock tiles intersected by this route (+10 XP per tile)
+      if (data.geometry?.coordinates && data.geometry.coordinates.length > 0) {
+        const routeTiles = routeToTiles(data.geometry.coordinates);
+        if (routeTiles.length > 0) {
+          try {
+            const unlockRes = await fetch('/api/discovery/unlock', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: currentUser?.id,
+                tile_ids: routeTiles,
+                has_photo: false,
+              }),
+            });
+            if (unlockRes.ok) {
+              const unlockData = await unlockRes.json();
+              if (unlockData.user_rank) {
+                setUserRank(unlockData.user_rank);
+              }
+              fetchDiscoveryTiles();
+            }
+          } catch (unlockErr) {
+            console.warn('Błąd podczas odblokowywania kafelków trasy:', unlockErr);
+          }
+        }
+      }
+
       // Stay on navigation tab
       setActiveTab('navigation');
       // On mobile, show the route report
@@ -204,6 +294,15 @@ export default function Home() {
           </div>
         )}
 
+        {/* Discovery Gamification / Fog of War Banner */}
+        <DiscoveryBanner
+          userRank={userRank}
+          showDiscoveryGrid={showDiscoveryGrid}
+          onToggleDiscoveryGrid={() => setShowDiscoveryGrid((prev) => !prev)}
+          unlockedTilesCount={discoveredTileIds.length}
+          auditedPhotosCount={auditedTileIds.length}
+        />
+
         {/* Tab Navigation (Main Mode) */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-3">
           <div className="flex gap-2">
@@ -311,8 +410,11 @@ export default function Home() {
                   selectedLocation={pickedLocation}
                   onSelectCurrentLocation={handleUseCurrentLocation}
                   currentUser={currentUser}
-                  onBarrierCreated={() => {
+                  onBarrierCreated={(info) => {
                     fetchBarriers();
+                    if (info) {
+                      handleBarrierCreatedDiscovery(info.latitude, info.longitude, info.hasPhoto);
+                    }
                     if (startPoint && endPoint) {
                       handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
                     }
@@ -373,6 +475,9 @@ export default function Home() {
                 barriers={route?.all_barriers || allBarriers}
                 selectedLocation={activeTab === 'crowdsource' ? pickedLocation : null}
                 onMapClick={handleMapClick}
+                discoveredTileIds={discoveredTileIds}
+                auditedTileIds={auditedTileIds}
+                showDiscoveryGrid={showDiscoveryGrid}
               />
             </div>
 

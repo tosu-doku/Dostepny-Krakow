@@ -7,7 +7,7 @@ import { Camera, MapPin, PlusCircle, Check, AlertCircle, Loader2, UserCheck, Use
 
 interface AddBarrierFormProps {
   selectedLocation: { lat: number; lng: number } | null;
-  onBarrierCreated: () => void;
+  onBarrierCreated: (info?: { latitude: number; longitude: number; hasPhoto: boolean }) => void;
   onSelectCurrentLocation: () => void;
   currentUser?: User | null;
 }
@@ -79,13 +79,21 @@ export default function AddBarrierForm({
         throw new Error(err.error || 'Nie udało się dodać bariery');
       }
 
+      const createdBarrier = await res.json().catch(() => null);
+
       setStatusMessage({
         type: 'success',
         text: 'Bariera została pomyślnie zgłoszona i dodana do bazy PostGIS!',
       });
+      const hadPhoto = !!photoFile || !!(createdBarrier && createdBarrier.image_url);
+      const loc = { lat: selectedLocation.lat, lng: selectedLocation.lng };
       setPhotoFile(null);
       setAddressDescription('');
-      onBarrierCreated();
+      onBarrierCreated({
+        latitude: loc.lat,
+        longitude: loc.lng,
+        hasPhoto: hadPhoto,
+      });
     } catch (err: any) {
       setStatusMessage({
         type: 'error',

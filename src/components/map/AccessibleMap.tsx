@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Barrier } from '@/types/barrier';
+import { KRAKOW_GRID_CONFIG, parseTileId, tileToBounds } from '@/services/grid';
 
 interface AccessibleMapProps {
   start?: { lat: number; lng: number } | null;
@@ -13,6 +14,10 @@ interface AccessibleMapProps {
   selectedLocation?: { lat: number; lng: number } | null;
   onMapClick?: (coords: { lat: number; lng: number }) => void;
   onSelectBarrier?: (barrier: Barrier) => void;
+  discoveredTileIds?: string[];
+  auditedTileIds?: string[];
+  showDiscoveryGrid?: boolean;
+  onTileClick?: (tileId: string) => void;
 }
 
 export default function AccessibleMap({
@@ -23,6 +28,10 @@ export default function AccessibleMap({
   selectedLocation,
   onMapClick,
   onSelectBarrier,
+  discoveredTileIds = [],
+  auditedTileIds = [],
+  showDiscoveryGrid = false,
+  onTileClick,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -30,6 +39,7 @@ export default function AccessibleMap({
   // Dedicated layer groups for clean, crash-free Leaflet updates
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
+  const discoveryLayerRef = useRef<L.LayerGroup | null>(null);
   const prevRouteKeyRef = useRef<string>('');
 
   // 1. Initialize Map
@@ -52,6 +62,7 @@ export default function AccessibleMap({
     // Create persistent layer groups
     routeLayerRef.current = L.layerGroup().addTo(map);
     markersLayerRef.current = L.layerGroup().addTo(map);
+    discoveryLayerRef.current = L.layerGroup().addTo(map);
 
     map.on('click', (e: L.LeafletMouseEvent) => {
       if (onMapClick) {
@@ -222,6 +233,68 @@ export default function AccessibleMap({
       }
     }
   }, [start, end, routeCoordinates, barriers, selectedLocation, onSelectBarrier]);
+
+  // 3. Update Fog of War / Exploration Grid Layer
+  useEffect(() => {
+    const discoveryLayer = discoveryLayerRef.current;
+    if (!discoveryLayer) return;
+
+    discoveryLayer.clearLayers();
+
+    if (!showDiscoveryGrid) return;
+
+    // A. Draw Bounding Box of Exploration Area
+    const boundsPoly = L.rectangle(
+      [
+        [KRAKOW_GRID_CONFIG.LAT_MIN, KRAKOW_GRID_CONFIG.LNG_MIN],
+        [KRAKOW_GRID_CONFIG.LAT_MAX, KRAKOW_GRID_CONFIG.LNG_MAX],
+      ],
+      {
+        color: '#6366f1',
+        weight: 2,
+        dashArray: '6, 6',
+        fill: false,
+        interactive: false,
+      }
+    );
+    boundsPoly.addTo(discoveryLayer);
+
+    const auditedSet = new Set(auditedTileIds);
+
+    // B. Draw Discovered Tiles (Cyan/Blue) & Audited Tiles (Golden)
+    for (const tileId of discoveredTileIds) {
+      const isAudited = auditedSet.has(tileId);
+      const parsed = parseTileId(tileId);
+      if (!parsed) continue;
+
+      const bounds = tileToBounds(parsed.x, parsed.y);
+      const rect = L.rectangle(bounds, {
+        color: isAudited ? '#d97706' : '#0891b2',
+        weight: 1.5,
+        fillColor: isAudited ? '#fbbf24' : '#22d3ee',
+        fillOpacity: isAudited ? 0.38 : 0.22,
+        interactive: true,
+      });
+
+      const statusText = isAudited
+        ? '🏆 Kafel Zaadytowany (Zdjęcie bariery! +100 XP)'
+        : '🧭 Kafel Odkryty (+10 XP)';
+
+      rect.bindTooltip(
+        `<div style="font-size:12px;font-weight:600;">${statusText}</div><div style="font-size:10px;color:#666;">ID: ${tileId}</div>`,
+        { sticky: true }
+      );
+
+      if (onTileClick) {
+        rect.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          onTileClick(tileId);
+        });
+      }
+
+      rect.addTo(discoveryLayer);
+    }
+  }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds, onTileClick]);
 
   return (
     <div

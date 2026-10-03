@@ -48,23 +48,27 @@
   - **Efekt:** Trasy w centrum Krakowa (np. Piłsudskiego → Kleparz) prowadzą bezpośrednio ciągami pieszymi (ul. Wiślna, Rynek Główny, ul. Floriańska) – dystans spadł z 3.88 km (objazd obwodnicą) do 1.70 km.
   - **Lokalizacja instrukcji:** Wdrożono funkcję `formatStepInstruction` tłumaczącą manewry na naturalny język polski (np. *„Skręć w lewo w ul. Wiślna”*, *„Rozpocznij trasę wzdłuż Rynek Główny”*).
 
-- [ ] **Zadanie 10: Funkcja Odkrywania Mapy Krakowa & Gamifikacja (Branch: `feat/map-discovery-gamification`)**
+- [x] **Zadanie 10: Funkcja Odkrywania Mapy Krakowa & Gamifikacja (Branch: `feat/map-discovery-gamification`)**
   - **Siatka geograficzna (Bounding Box):**
-    - Zakres: `50.0550° N – 50.0750° N`, `19.9250° E – 20.0000° E` (~2.22 km x ~5.35 km, ~11.9 km²).
+    - Zakres ścisłego centrum: `50.0550° N – 50.0750° N`, `19.9250° E – 20.0000° E` (~2.22 km x ~5.35 km, ~11.9 km²).
     - Krok siatki: `STEP_LAT = 0.0009°` (~100.08 m), `STEP_LNG = 0.0014°` (~99.93 m).
     - Rozmiar: 22 wiersze x 54 kolumny = 1 188 kafelków centrum Krakowa.
   - **Prywatność i model zapisu:**
-    - Brak śledzenia trajektorii GPS – zapisujemy jedynie dyskretne identyfikatory kafelków (`tile_x`, `tile_y`).
-    - Tabela relacyjna: `public.user_discovered_tiles(user_id, tile_x, tile_y, has_photo_contribution, unlocked_at)`.
-    - Po stronie klienta: szybki `Set<tileId>` z synchronizacją offline (LocalStorage) i API (`/api/discovery/unlock`).
+    - Zero śledzenia trajektorii GPS – zapisujemy wyłącznie dyskretne identyfikatory kafelków (`tile_x`, `tile_y`).
+    - Tabela relacyjna w Supabase/PostgreSQL: `public.user_discovered_tiles(user_id, tile_x, tile_y, tile_id, has_photo_contribution, unlocked_at)` z kluczem unikalnym `UNIQUE(user_id, tile_x, tile_y)`.
+    - Widok agregacyjny `public.city_exploration_stats` do pomiaru globalnego audytu miasta.
   - **Gamifikacja & motywacja do zdjęć:**
-    - Trzy stany kafelka: *Mgła Wojny* (nieodkryty), *Odkryty* (+10 XP za przejście), *Zaudytowany Złoty Kafelek* (+100 XP za dodanie zdjęcia bariery architektonicznej!).
-    - Rangi eksploratora: *Turysta z Plant* -> *Krakowski Przechodzień* -> *Eksplorator Starego Miasta* -> *Kartograf Dostępności* -> *Mistrz Krakowa bez Barier*.
-    - Pasek postępu społecznościowego: *% zbadanego centrum Krakowa*.
-  - **Wdrożenie frontend/backend:**
-    - Moduł pomocniczy `src/services/grid.ts` ($O(1)$ konwersja `coordsToTile` i `tileToBounds`).
-    - Warstwa wizualna na mapie Leaflet (przełącznik mgły wojny / kafelków).
-    - Komponent podsumowania postępów i odznak w nagłówku.
+    - Dwa stany odblokowania kafelka na mapie:
+      - *Kafel Odkryty* (kolor błękitno-cyjanowy, +10 XP za pokonanie trasy przez kafel).
+      - *Kafel Zaadytowany* (kolor złoty 🏆 z ikoną aparatu 📷, +100 XP za dodanie zdjęcia bariery architektonicznej!).
+    - Progresja rang: *Nowicjusz z Plant (Lvl 1)* -> *Krakowski Przechodzień (Lvl 2)* -> *Eksplorator Starego Miasta (Lvl 3)* -> *Kartograf Dostępności (Lvl 4)* -> *Mistrz Krakowa bez Barier (Lvl 5)*.
+  - **Wdrożenie frontend & backend:**
+    - Silnik siatki `src/services/grid.ts`: czysta matematyka $O(1)$, próbkowanie wektora trasy `routeToTiles` co ~35 m, obliczanie rang i progów XP.
+    - Serwis backendowy `src/services/discovery.ts` z obsługą użytkowników zalogowanych oraz płynnym fallbackiem w pamięci dla gości.
+    - Endpointy API: `POST /api/discovery/unlock`, `GET /api/discovery/my-tiles`, `GET /api/discovery/city-stats`.
+    - Komponent UI `DiscoveryBanner.tsx`: pasek postępu XP, odznaki, liczniki kafelków, przełącznik widoczności siatki oraz modal z regułami punktacji i zasadami prywatności.
+    - Integracja z Leaflet `AccessibleMap.tsx`: interaktywne prostokąty z tooltipami, granicą obszaru eksploracji i obsługą zdarzeń.
+    - Automatyczne odblokowywanie kafelków przy wyznaczaniu trasy oraz przy wysyłaniu formularza dodawania bariery ze zdjęciem.
 
 
 
