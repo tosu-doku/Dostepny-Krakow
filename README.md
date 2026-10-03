@@ -66,7 +66,20 @@ Każda przeszkoda i segment trasy opisany jest metadanymi wiarygodności:
 
 ---
 
-## 🚀 5. Uruchomienie Lokalne
+## 📡 5. Zaimplementowane Endpointy API
+
+Aplikacja udostępnia modularne API zgodne z architekturą z `AGENTS.md`:
+
+| Metoda | Endpoint | Opis |
+|---|---|---|
+| `POST` | `/api/route` | Wyznacza trasę pieszą/dla wózków, wylicza korytarz przestrzenny, nakłada przeszkody i oznacza odcinki niezaudytowane (`Stan nieznany (brak audytu)`). |
+| `POST` | `/api/barriers/along-route` | Wywołuje funkcję PostGIS RPC `get_barriers_along_route` z buforem metrycznym (np. 15–20 m) wokół przekazanej geometrii trasy. |
+| `GET` | `/api/barriers` | Zwraca listę wszystkich barier z bazy Supabase wraz ze współrzędnymi WGS84 i metadanymi wiarygodności. |
+| `POST` | `/api/barriers` | Dodaje nową barierę (JSON lub `multipart/form-data` ze zdjęciem wysyłanym do Supabase Storage). |
+
+---
+
+## 🚀 6. Uruchomienie Lokalne
 
 ### Wymagania wstępne
 * Node.js v20+
@@ -75,7 +88,7 @@ Każda przeszkoda i segment trasy opisany jest metadanymi wiarygodności:
 ### Instalacja
 1. Sklonuj repozytorium:
    ```bash
-   git clone [https://github.com/twoj-zespol/krakow-bez-barier.git](https://github.com/twoj-zespol/krakow-bez-barier.git)
+   git clone https://github.com/twoj-zespol/krakow-bez-barier.git
    cd krakow-bez-barier
    ```
 2. Zainstaluj zależności:
@@ -88,7 +101,7 @@ Każda przeszkoda i segment trasy opisany jest metadanymi wiarygodności:
    NEXT_PUBLIC_SUPABASE_ANON_KEY=twoj_klucz_anonimowy
    NEXT_PUBLIC_ORS_API_KEY=klucz_openrouteservice
    ```
-4. Uruchom bazę danych (skrypty migracji SQL znajdują się w `supabase/migrations/`).
+4. Uruchom bazę danych (skrypty migracji SQL znajdują się w `DATA_MODEL.md`).
 5. Uruchom serwer deweloperski:
    ```bash
    npm run dev
@@ -97,14 +110,14 @@ Każda przeszkoda i segment trasy opisany jest metadanymi wiarygodności:
 
 ---
 
-## ♿ 6. Dostępność Cyfrowa (WCAG 2.2 AA)
+## ♿ 7. Dostępność Cyfrowa (WCAG 2.2 AA)
 * **Alternatywa dla mapy:** Dedykowany widok listy kroków („Krok po kroku”) z pełnym opisem przeszkód (np. *„Za 50 m: 4 stopnie w dół, brak podjazdu, nawierzchnia z kostki brukowej”*).
 * **Skróty klawiszowe:** Klawisz `Tab` przenosi logicznie przez wszystkie elementy aktywne.
 * **Tryb wysokiego kontrastu:** Wsparcie dla preferencji systemowych (`prefers-contrast`).
 
 ---
 
-## 💼 7. Model Biznesowy i Skalowalność
+## 💼 8. Model Biznesowy i Skalowalność
 * **B2G (Samorządy):** Narzędzie gotowe do wdrożenia w dowolnym mieście dzięki integracji ze standardem OpenStreetMap.
 * **B2B (Hotele, Gastronomia, Wydarzenia):** Widget do umieszczenia na stronach hoteli i obiektów kulturalnych prezentujący dokładny profil dojazdu i wejścia dla gości o szczególnych potrzebach.
 * **Audyty Dostępności:** Narzędzie generujące raporty dla zarządców nieruchomości do celów certyfikacji dostępności budynków.
