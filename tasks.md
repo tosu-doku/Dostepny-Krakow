@@ -42,3 +42,10 @@
     - usuwają wgrane przez niego zdjęcia bezpośrednio z bucketa Supabase Storage (`barriers`).
   - **Dokumentacja i Migracja SQL:** przygotowano plik migracji `supabase/migrations/20261003_create_users_and_bad_actor_purge.sql` oraz zaktualizowano `DATA_MODEL.md` (sekcje 9–13) z gotowym do uruchomienia kodem SQL.
 
+- [x] **Zadanie 9: Eliminacja routingu samochodowego i przejście na autentyczny routing pieszy OSM**
+  - **Diagnoza problemu:** Publiczny serwer demonstracyjny `router.project-osrm.org` posiada wyłącznie profil samochodowy (`car`), ignorując `/foot/` w URL. W Krakowie, ze względu na zakaz wjazdu samochodów do Strefy Starego Miasta, wymuszało to objazd 2. obwodnicą (Alejami Trzech Wieszczów: al. Mickiewicza, al. Słowackiego).
+  - **Wdrożenie silnika pieszego:** Zastąpiono router samochodowy dedykowanym silnikiem pieszym OpenStreetMap Foundation (`routing.openstreetmap.de/routed-foot/` z fallbackiem do `routed-bike/`).
+  - **Efekt:** Trasy w centrum Krakowa (np. Piłsudskiego → Kleparz) prowadzą bezpośrednio ciągami pieszymi (ul. Wiślna, Rynek Główny, ul. Floriańska) – dystans spadł z 3.88 km (objazd obwodnicą) do 1.70 km.
+  - **Lokalizacja instrukcji:** Wdrożono funkcję `formatStepInstruction` tłumaczącą manewry na naturalny język polski (np. *„Skręć w lewo w ul. Wiślna”*, *„Rozpocznij trasę wzdłuż Rynek Główny”*).
+
+

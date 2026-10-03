@@ -79,6 +79,78 @@ export function calculateRealisticDurationSeconds(
 }
 
 /**
+ * Formats raw routing step maneuvers into natural, accessible Polish navigation instructions.
+ */
+function formatStepInstruction(s: any): string {
+  const maneuver = s.maneuver || {};
+  const type = maneuver.type || '';
+  const modifier = maneuver.modifier || '';
+  const rawName = (s.name || '').trim();
+  const streetName = rawName
+    ? rawName.startsWith('ul.') || rawName.startsWith('Aleja') || rawName.startsWith('Rynek') || rawName.startsWith('Plac') || rawName.startsWith('Droga') || rawName.startsWith('Tunel')
+      ? rawName
+      : `ul. ${rawName}`
+    : '';
+
+  let directionText = '';
+  switch (modifier) {
+    case 'left':
+      directionText = 'w lewo';
+      break;
+    case 'right':
+      directionText = 'w prawo';
+      break;
+    case 'sharp left':
+      directionText = 'ostro w lewo';
+      break;
+    case 'sharp right':
+      directionText = 'ostro w prawo';
+      break;
+    case 'slight left':
+      directionText = 'łagodnie w lewo';
+      break;
+    case 'slight right':
+      directionText = 'łagodnie w prawo';
+      break;
+    case 'straight':
+      directionText = 'prosto';
+      break;
+    case 'uturn':
+      directionText = 'zawróć';
+      break;
+  }
+
+  switch (type) {
+    case 'depart':
+      return streetName ? `Rozpocznij trasę wzdłuż ${streetName}` : 'Rozpocznij trasę';
+    case 'arrive':
+      return 'Dotarłeś do celu podróży';
+    case 'turn':
+      return directionText
+        ? `Skręć ${directionText}${streetName ? ` w ${streetName}` : ''}`
+        : streetName
+        ? `Przejdź w ${streetName}`
+        : 'Skręć';
+    case 'continue':
+    case 'new name':
+      return streetName ? `Kontynuuj wzdłuż ${streetName}` : 'Idź prosto';
+    case 'end of road':
+      return directionText
+        ? `Na końcu drogi skręć ${directionText}${streetName ? ` w ${streetName}` : ''}`
+        : `Na końcu drogi ${streetName ? `wejdź w ${streetName}` : 'skręć'}`;
+    case 'fork':
+      return directionText
+        ? `Na rozwidleniu wybierz drogę ${directionText}${streetName ? ` w ${streetName}` : ''}`
+        : 'Wybierz odpowiednią odnogę';
+    case 'roundabout':
+    case 'rotary':
+      return streetName ? `Na rondzie zjedź w ${streetName}` : 'Na rondzie zjedź odpowiednim zjazdem';
+    default:
+      return streetName ? `Idź wzdłuż ${streetName}` : s.instruction || 'Kontynuuj trasę';
+  }
+}
+
+/**
  * Maps application profile to OpenRouteService profile name.
  */
 function mapProfileToOrs(profile: NavigationProfile): string {
@@ -127,6 +199,22 @@ async function fetchOrsRoute(
   });
 
   if (!response.ok) {
+    // If wheelchair profile failed (e.g. strict ORS wheelchair graph has no tags in this area),
+    // retry with foot-walking before giving up
+    if (orsProfile === 'wheelchair') {
+      const fallbackUrl = `https://api.openrouteservice.org/v2/directions/foot-walking/geojson`;
+      const fallbackRes = await fetch(fallbackUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: ORS_API_KEY,
+        },
+        body: JSON.stringify(body),
+      });
+      if (fallbackRes.ok) {
+        return fallbackRes.json();
+      }
+    }
     const errText = await response.text();
     throw new Error(`OpenRouteService error (${response.status}): ${errText}`);
   }
@@ -135,20 +223,42 @@ async function fetchOrsRoute(
 }
 
 /**
- * Fallback routing using public OSRM when ORS key is not set or rate-limited.
+ * Pedestrian & wheelchair routing using OpenStreetMap Foundation foot routing daemon (routed-foot).
+ * Note: Never uses router.project-osrm.org (which only runs the car/driving profile and forces routes onto ring roads).
  */
-async function fetchOsrmFallbackRoute(
+async function fetchOsmFootRoute(
   startLng: number,
   startLat: number,
   endLng: number,
   endLat: number
 ): Promise<any> {
-  const url = `https://router.project-osrm.org/route/v1/foot/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`OSRM error (${response.status})`);
+  const endpoints = [
+    // 1. Dedicated OpenStreetMap pedestrian router (routed-foot with foot.lua)
+    `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`,
+    // 2. Bike fallback (allows pedestrian zones and city paths, avoids motorways/heavy traffic)
+    `https://routing.openstreetmap.de/routed-bike/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`,
+  ];
+
+  let lastError: any = null;
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'KrakowBezBarier/1.0 (HackYeah2026; AccessibilityRouting)',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+          return data;
+        }
+      }
+    } catch (err) {
+      lastError = err;
+    }
   }
-  return response.json();
+
+  throw new Error(`Błąd trasowania pieszego OSM: ${lastError?.message || 'Brak odpowiedzi serwera'}`);
 }
 
 /**
@@ -168,15 +278,15 @@ export async function calculateAccessibleRoute(
       routeGeojson = await fetchOrsRoute(start.lng, start.lat, end.lng, end.lat, profile);
       isFromOrs = true;
     } catch (orsError) {
-      console.warn('ORS routing failed, falling back to OSRM:', orsError);
+      console.warn('ORS routing failed, falling back to OSM foot routing:', orsError);
     }
   }
 
   if (!routeGeojson) {
     try {
-      const osrmData = await fetchOsrmFallbackRoute(start.lng, start.lat, end.lng, end.lat);
-      if (osrmData?.routes?.[0]) {
-        const r = osrmData.routes[0];
+      const osmData = await fetchOsmFootRoute(start.lng, start.lat, end.lng, end.lat);
+      if (osmData?.routes?.[0]) {
+        const r = osmData.routes[0];
         // Format to common structure
         routeGeojson = {
           features: [
@@ -190,7 +300,7 @@ export async function calculateAccessibleRoute(
                 segments: [
                   {
                     steps: (r.legs?.[0]?.steps || []).map((s: any) => ({
-                      instruction: s.maneuver?.type ? `${s.maneuver.type} ${s.name || ''}`.trim() : (s.name || 'Kontynuuj trasę'),
+                      instruction: formatStepInstruction(s),
                       distance: s.distance,
                       duration: s.duration,
                       way_points: [0, s.geometry?.coordinates?.length ? s.geometry.coordinates.length - 1 : 0],
@@ -203,8 +313,8 @@ export async function calculateAccessibleRoute(
           ],
         };
       }
-    } catch (osrmError) {
-      console.error('All routing providers failed:', osrmError);
+    } catch (osmError) {
+      console.error('All routing providers failed:', osmError);
       // Emergency direct line fallback
       routeGeojson = {
         features: [
