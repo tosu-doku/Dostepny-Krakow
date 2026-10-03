@@ -19,6 +19,7 @@ interface AccessibleMapProps {
   showDiscoveryGrid?: boolean;
   onTileClick?: (tileId: string) => void;
   currentGpsCoords?: { lat: number; lng: number } | null;
+  centerOnGpsTrigger?: number;
 }
 
 export default function AccessibleMap({
@@ -34,6 +35,7 @@ export default function AccessibleMap({
   showDiscoveryGrid = false,
   onTileClick,
   currentGpsCoords = null,
+  centerOnGpsTrigger = 0,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -381,12 +383,49 @@ export default function AccessibleMap({
     marker.addTo(layer);
   }, [currentGpsCoords]);
 
+  // 5. Auto-center map on user GPS location when triggered (e.g. upon enabling Live Location mode)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !currentGpsCoords || !centerOnGpsTrigger) return;
+
+    try {
+      map.setView([currentGpsCoords.lat, currentGpsCoords.lng], 16, { animate: false });
+    } catch (err) {
+      console.warn('Auto-center on GPS warning:', err);
+    }
+  }, [centerOnGpsTrigger, currentGpsCoords]);
+
+  const handleRecenterOnGps = () => {
+    const map = mapInstanceRef.current;
+    if (!map || !currentGpsCoords) return;
+    try {
+      map.setView([currentGpsCoords.lat, currentGpsCoords.lng], 16, { animate: false });
+    } catch (err) {
+      console.warn('Recenter GPS error:', err);
+    }
+  };
+
   return (
-    <div
-      ref={mapContainerRef}
-      className="w-full h-full min-h-[450px] rounded-lg shadow-inner z-0"
-      role="application"
-      aria-label="Interaktywna mapa Krakowa z trasą i barierami architektonicznymi"
-    />
+    <div className="relative w-full h-full min-h-[450px]">
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full min-h-[450px] rounded-lg shadow-inner z-0"
+        role="application"
+        aria-label="Interaktywna mapa Krakowa z trasą i barierami architektonicznymi"
+      />
+
+      {/* Floating GPS Recenter Button when live coordinates are available */}
+      {currentGpsCoords && (
+        <button
+          type="button"
+          onClick={handleRecenterOnGps}
+          title="Wyśrodkuj widok na mojej lokalizacji GPS"
+          className="absolute top-3 right-3 z-10 px-3 py-2 bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 rounded-xl shadow-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-transform active:scale-95 cursor-pointer flex items-center gap-2 text-xs font-bold"
+        >
+          <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
+          <span>Moja lokalizacja</span>
+        </button>
+      )}
+    </div>
   );
 }

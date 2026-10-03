@@ -54,6 +54,7 @@ export default function Home() {
   const [liveLocationEnabled, setLiveLocationEnabled] = useState<boolean>(false);
   const [currentGpsCoords, setCurrentGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsStatusMessage, setGpsStatusMessage] = useState<string | null>(null);
+  const [centerOnGpsTrigger, setCenterOnGpsTrigger] = useState<number>(0);
 
   // Ref to hold current discoveredTileIds to avoid stale closures in geolocation callbacks
   const discoveredTileIdsRef = useRef<string[]>([]);
@@ -156,6 +157,9 @@ export default function Home() {
             }
             const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             setCurrentGpsCoords(coords);
+            setCenterOnGpsTrigger(Date.now());
+            // Automatically switch to map view so user immediately sees their live location
+            setMobileView('map');
             checkAndUnlockLiveTile(coords.lat, coords.lng);
           },
           (err) => {
@@ -177,6 +181,7 @@ export default function Home() {
         }
         setCurrentGpsCoords(null);
         setGpsStatusMessage(null);
+        setCenterOnGpsTrigger(0);
       }
     },
     [checkAndUnlockLiveTile]
@@ -636,6 +641,7 @@ export default function Home() {
                 auditedTileIds={auditedTileIds}
                 showDiscoveryGrid={showDiscoveryGrid}
                 currentGpsCoords={currentGpsCoords}
+                centerOnGpsTrigger={centerOnGpsTrigger}
               />
             </div>
 

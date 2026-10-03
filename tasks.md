@@ -73,7 +73,7 @@
     - Umieszczony w menu profilu użytkownika bezpośrednio nad narzędziem Bad Actor Purge (oraz na pasku nagłówka dla gości).
     - Rozróżnienie dwóch trybów:
       - **Tryb Planera (Domyślny, toggle OFF):** Kafelki odkrywają się po wyznaczeniu trasy A → B w planerze.
-      - **Tryb Wędrówki na żywo (Toggle ON):** Kafelki **nie są** odkrywane sztucznie w planerze – użytkownik musi włączyć GPS i fizycznie przebywać dany sektor ~100m. Aplikacja periodycznie sprawdza pozycję (`watchPosition` + interwał) i w czasie rzeczywistym odblokowuje nowy kafelek (+10 XP) z animowanym powiadomieniem oraz pulsującym znacznikiem pozycji na mapie.
+      - **Tryb Wędrówki na żywo (Toggle ON):** Kafelki **nie są** odkrywane sztucznie w planerze – użytkownik musi włączyć GPS i fizycznie przebywać dany sektor ~100m. Aplikacja periodycznie sprawdza pozycję (`watchPosition` + interwał) i w czasie rzeczywistym odblokowuje nowy kafelek (+10 XP) z animowanym powiadomieniem, pulsującym znacznikiem pozycji na mapie, **automatycznym przejściem i wyśrodkowaniem mapy na lokalizacji użytkownika (zoom 16)** oraz pływającym przyciskiem szybkiego wyśrodkowania *„Moja lokalizacja”*.
 
 
 

@@ -83,6 +83,15 @@ Aplikacja rozwiązuje ten problem poprzez:
 * `is_banned`: BOOLEAN (blokada konta w przypadku naruszeń / spamu)
 * `role`: TEXT (`USER` lub `ADMIN`)
 
+### Tabela `public.user_discovered_tiles`
+* `id`: UUID (Primary Key)
+* `user_id`: UUID (opcjonalny klucz do `public.users.id`)
+* `tile_x`: INT (indeks kolumny 0–53)
+* `tile_y`: INT (indeks wiersza 0–21)
+* `tile_id`: TEXT (np. `14_8`)
+* `has_photo_contribution`: BOOLEAN (flaga złotego kafla audytu ze zdjęciem)
+* `unlocked_at`: TIMESTAMPTZ
+
 ---
 
 ## 📡 5. Zaimplementowane Endpointy API
@@ -92,19 +101,46 @@ Aplikacja udostępnia modularne API:
 | Metoda | Endpoint | Opis |
 |---|---|---|
 | `POST` | `/api/route` | Wyznacza trasę pieszą/dla wózków, wylicza korytarz przestrzenny, nakłada przeszkody i oznacza odcinki niezaudytowane (`Stan nieznany`). |
-| `POST` | `/api/barriers/along-route` | Wywołuje funkcję PostGIS RPC `get_barriers_along_route` z buforem metrycznym (15–35 m) wokół przekazanej geometrii trasy. |
-| `GET` | `/api/barriers` | Zwraca listę wszystkich aktywnych barier z bazy Supabase (z automatycznym wykluczeniem wpisów zbanowanych bad actorów). |
-| `POST` | `/api/barriers` | Dodaje nową barierę (JSON lub `multipart/form-data` ze zdjęciem wysyłanym do Supabase Storage) i wiąże z `created_by`. |
+| `POST` | `/api/barriers/along-route` | Wywołuje funkcję PostGIS RPC `get_barriers_along_route` z buforem metrycznym (15–35 m) wokół geometrii trasy. |
+| `GET` | `/api/barriers` | Zwraca listę wszystkich aktywnych barier z bazy Supabase (z wykluczeniem wpisów zbanowanych bad actorów). |
+| `POST` | `/api/barriers` | Dodaje nową barierę (JSON lub `multipart/form-data` ze zdjęciem do Supabase Storage) i wiąże z `created_by`. |
 | `POST` | `/api/auth/register` | Rejestracja nowego użytkownika (`nickname`, `email`, `password`) z bezpiecznym hashem `scrypt`. |
 | `POST` | `/api/auth/login` | Logowanie użytkownika, walidacja hasła i ustawienie ciasteczka sesyjnego `kbb_session` (`httpOnly`). |
 | `POST` | `/api/auth/logout` | Wylogowanie użytkownika i usunięcie ciasteczka sesyjnego. |
-| `GET` | `/api/auth/me` | Zwraca dane aktualnie zalogowanego użytkownika (nick, email, data rejestracji, liczba zgłoszeń). |
+| `GET` | `/api/auth/me` | Zwraca dane zalogowanego użytkownika (nick, email, data rejestracji, liczba zgłoszeń). |
 | `GET` | `/api/admin/purge-bad-actor` | Lista użytkowników wraz z liczbą ich zgłoszeń do weryfikacji przez moderatora. |
-| `POST` | `/api/admin/purge-bad-actor` | Procedura Bad Actor Purge: blokada konta (`is_banned = true`), usunięcie wszystkich jego barier z PostGIS oraz usunięcie wgranych zdjęć ze Storage. |
+| `POST` | `/api/admin/purge-bad-actor` | Procedura Bad Actor Purge: blokada konta (`is_banned = true`), usunięcie jego barier z PostGIS i zdjęć ze Storage. |
+| `POST` | `/api/discovery/unlock` | Odblokowuje kafelki eksploracji, nalicza punkty XP (+10 XP za kafel, +100 XP za zdjęcie) i zwraca nową rangę. |
+| `GET` | `/api/discovery/my-tiles` | Zwraca listę odkrytych kafelków użytkownika, status zdjęć oraz stan poziomu XP. |
+| `GET` | `/api/discovery/city-stats` | Zagregowane statystyki społecznościowe (% zbadanego centrum Krakowa, liczba zaudytowanych kafelków). |
 
 ---
 
-## 🛡️ 6. Funkcja Bad Actor Purge & Ochrona Danych
+## 🎮 6. Odkrywanie Mapy Krakowa, Gamifikacja & Wędrówka GPS
+
+W celu aktywizacji społeczności do realnego mapowania barier architektonicznych wdrożono system **odkrywania mapy („Mgła Wojny”)**:
+
+* **Siatka Ścisłego Centrum Krakowa:**
+  * Zakres: `50.0550° N – 50.0750° N`, `19.9250° E – 20.0000° E` (~11.9 km²).
+  * Rozmiar: 22 wiersze $\times$ 54 kolumny = **1 188 kafelków** o wymiarach $\approx 100\,\text{m} \times 100\,\text{m}$.
+  * Algorytm $O(1)$: konwersja współrzędnych i wyznaczanie geometrii w pamięci przeglądarki bez obciążających bibliotek GIS.
+* **Ochrona Prywatności (Privacy by Design):**
+  * W bazie **nie są zapisywane** surowe koordynaty ani ślady GPS użytkowników. Serwer przechowuje jedynie unikalne identyfikatory zaliczonych kafelków (`tile_x`, `tile_y`).
+* **Punktacja XP i Złote Kafelki:**
+  * **+10 XP** za odkrycie kafelka (kolor cyjanowy),
+  * **+50 XP** za zgłoszenie bariery architektonicznej,
+  * **+100 XP** za zgłoszenie bariery **ze zdjęciem** – zamienia kafel w prestiżowy **Złoty Kafel Zaadytowany 🏆** z ikoną aparatu 📷.
+* **Dwa Tryby Eksploracji (Przełącznik w profilu użytkownika):**
+  1. **Tryb Planera (Domyślny, toggle OFF):** Kafelki odblokowują się automatycznie wzdłuż wyznaczanych tras miejskich A $\to$ B.
+  2. **Tryb Wędrówki na żywo (Toggle ON, GPS):**
+     * Kafelki nie są odkrywane w planerze – użytkownik musi włączyć GPS i fizycznie wejść w dany sektor 100m.
+     * **Auto-centrowanie mapy:** Po włączeniu trybu mapa automatycznie przełącza się na widok smartfona i płynnie centruje widok na aktualnej lokalizacji użytkownika (zoom 16).
+     * **Wskaźnik GPS:** Pulsujący niebieski marker na mapie oraz pływający przycisk *„Moja lokalizacja”* umożliwiający ponowne wyśrodkowanie w dowolnej chwili.
+     * **Dynamiczne powiadomienia:** W czasie rzeczywistym pojawia się powiadomienie `✨ Odkryto kafel: X_Y (+10 XP)!`.
+
+---
+
+## 🛡️ 7. Funkcja Bad Actor Purge & Ochrona Danych
 
 W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono kompleksowy system oczyszczania:
 1. **Procedura bazodanowa RPC:** `purge_bad_actor_contributions(target_user_id UUID)` (PostgreSQL `SECURITY DEFINER`) – blokuje konto i usuwa rekordy barier.
@@ -114,7 +150,7 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
 
 ---
 
-## 📱 7. Responsywność Mobilna & Galeria Zdjęć
+## 📱 8. Responsywność Mobilna & Galeria Zdjęć
 
 * **Przełącznik mobilny:** Na ekranach smartfonów (`< lg`) dostępny jest szybki przełącznik segmentowy `[Planer i Wskazówki] | [Mapa]`, eliminujący uciążliwe przewijanie.
 * **Targety dotykowe:** Wszystkie przyciski i pola spełniają standard WCAG 2.2 Target Size (min. 44x44px).
@@ -122,7 +158,7 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
 
 ---
 
-## 🚀 8. Uruchomienie Lokalne
+## 🚀 9. Uruchomienie Lokalne
 
 ### Wymagania wstępne
 * Node.js v20+
@@ -148,7 +184,7 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
    AUTH_SECRET=super-bezpieczny-klucz-sesji
    ```
 4. Uruchom bazę danych w Supabase:
-   * Skopiuj kod z pliku `supabase/migrations/20261003_create_users_and_bad_actor_purge.sql` lub `DATA_MODEL.md` i wykonaj w **SQL Editor**.
+   * Skopiuj kod z pliku `supabase/migrations/20261003_create_users_and_bad_actor_purge.sql` oraz `supabase/migrations/20261004_create_discovered_tiles.sql` i wykonaj w **SQL Editor**.
 5. Uruchom serwer deweloperski:
    ```bash
    npm run dev
@@ -157,7 +193,7 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
 
 ---
 
-## ♿ 9. Dostępność Cyfrowa (WCAG 2.2 AA)
+## ♿ 10. Dostępność Cyfrowa (WCAG 2.2 AA)
 * **Alternatywa dla mapy:** Dedykowany widok listy kroków („Krok po kroku”) z pełnym opisem przeszkód (np. *„Za 50 m: 4 stopnie w dół, brak podjazdu, nawierzchnia z kostki brukowej”*).
 * **Skróty klawiszowe:** Klawisz `Tab` przenosi logicznie przez wszystkie elementy aktywne, `Escape` zamyka modale, strzałki obsługują galerię.
 * **Tryb wysokiego kontrastu:** Wsparcie dla preferencji systemowych oraz kontrast tekstu min. 4.5:1.
@@ -165,7 +201,7 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
 
 ---
 
-## 💼 10. Model Biznesowy i Skalowalność
+## 💼 11. Model Biznesowy i Skalowalność
 * **B2G (Samorządy):** Narzędzie gotowe do wdrożenia w dowolnym mieście dzięki integracji ze standardem OpenStreetMap i PostGIS.
 * **B2B (Hotele, Gastronomia, Wydarzenia):** Widget do umieszczenia na stronach obiektów prezentujący dokładny profil dostępności dla gości o szczególnych potrzebach.
 * **Audyty Dostępności:** Narzędzie ułatwiające inwentaryzację barier i generowanie raportów do celów certyfikacji dostępności budynków.
