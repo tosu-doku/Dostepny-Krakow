@@ -76,5 +76,15 @@
       - **Tryb Planera (Domyślny, toggle OFF):** Kafelki odkrywają się po wyznaczeniu trasy A → B w planerze.
       - **Tryb Wędrówki na żywo (Toggle ON):** Kafelki **nie są** odkrywane sztucznie w planerze – użytkownik musi włączyć GPS i fizycznie przebywać dany sektor ~100m. Aplikacja periodycznie sprawdza pozycję (`watchPosition` + interwał) i w czasie rzeczywistym odblokowuje nowy kafelek (+10 XP) z animowanym powiadomieniem, pulsującym znacznikiem pozycji na mapie, **automatycznym przejściem i wyśrodkowaniem mapy na lokalizacji użytkownika (zoom 16)** oraz pływającym przyciskiem szybkiego wyśrodkowania *„Moja lokalizacja”*.
 
-
-
+- [x] **Zadanie 11: Pragmatyczny Refaktoring Codebase (Branch: `refactor/codebase-improvements`)**
+  - **Cel:** Uporządkowanie architektury frontendowej bez zbędnego narzutu i komplikacji, eliminacja długu technicznego po szybkich iteracjach hackathonowych.
+  - **Usunięcie martwego kodu:**
+    - Usunięto nieużywany, prototypowy plik `src/components/map/FogOfWarLayer.tsx` (104 linie zdublowanej logiki renderowania Leaflet).
+  - **Wydzielenie helperów mapy (`src/components/map/mapIcons.ts`):**
+    - Odseparowano szablony HTML dla ikon `A`, `B`, wybranego punktu, znacznika GPS oraz popupów barier architektonicznych z `AccessibleMap.tsx`.
+  - **Ekstrakcja custom hooka `src/hooks/useDiscovery.ts`:**
+    - Odseparowano zarządzanie stanem siatki odkryć, pobieranie kafelków (`/api/discovery/my-tiles`), odblokowywanie po trasie i dodaniu zdjęcia oraz kalkulację rang i XP.
+  - **Ekstrakcja custom hooka `src/hooks/useLiveLocation.ts`:**
+    - Zamknięto w spójnym module niskopoziomową obsługę Geolocation API (`watchPosition`, polling fallback 15s, throttling `4000ms`, synchronizację z `localStorage` oraz animowane komunikaty o odblokowaniu kafelka w czasie rzeczywistym).
+  - **Redukcja `src/app/page.tsx`:**
+    - Zredukowano główny komponent z 674 linii do 349 linii (~48% mniej kodu), przekształcając go w czysty, deklaratywny kontener prezentacyjny.

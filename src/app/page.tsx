@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { RouteResult, NavigationProfile } from '@/types/routing';
 import { Barrier } from '@/types/barrier';
@@ -10,8 +10,16 @@ import RouteObstacleList from '@/components/navigation/RouteObstacleList';
 import AddBarrierForm from '@/components/crowdsourcing/AddBarrierForm';
 import UserAccountMenu from '@/components/auth/UserAccountMenu';
 import DiscoveryBanner from '@/components/gamification/DiscoveryBanner';
-import { routeToTiles, coordsToTile, calculateUserRank, UserRank } from '@/services/grid';
-import { ShieldCheck, Map as MapIcon, PlusCircle, AlertCircle, Compass, ListFilter } from 'lucide-react';
+import { useDiscovery } from '@/hooks/useDiscovery';
+import { useLiveLocation } from '@/hooks/useLiveLocation';
+import {
+  ShieldCheck,
+  Map as MapIcon,
+  PlusCircle,
+  AlertCircle,
+  Compass,
+  ListFilter,
+} from 'lucide-react';
 
 // Dynamically import Leaflet Map to prevent SSR errors
 const AccessibleMap = dynamic(() => import('@/components/map/AccessibleMap'), {
@@ -30,6 +38,7 @@ export default function Home() {
   const [allBarriers, setAllBarriers] = useState<Barrier[]>([]);
   const [isLoadingRoute, setIsLoadingRoute] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Map state
   const [startPoint, setStartPoint] = useState<{ lat: number; lng: number } | null>({
@@ -42,25 +51,34 @@ export default function Home() {
   });
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pickingTarget, setPickingTarget] = useState<'start' | 'end' | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Fog of War / Map Discovery Gamification state
-  const [discoveredTileIds, setDiscoveredTileIds] = useState<string[]>([]);
-  const [auditedTileIds, setAuditedTileIds] = useState<string[]>([]);
-  const [userRank, setUserRank] = useState<UserRank | null>(null);
-  const [showDiscoveryGrid, setShowDiscoveryGrid] = useState<boolean>(true);
+  // Gamification & Discovery Hook
+  const {
+    discoveredTileIds,
+    auditedTileIds,
+    userRank,
+    showDiscoveryGrid,
+    toggleDiscoveryGrid,
+    fetchDiscoveryTiles,
+    unlockRouteTiles,
+    unlockBarrierTile,
+    discoveredTileIdsRef,
+  } = useDiscovery(currentUser);
 
-  // Live Location ("Lokalizacja na żywo") exploration state
-  const [liveLocationEnabled, setLiveLocationEnabled] = useState<boolean>(false);
-  const [currentGpsCoords, setCurrentGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [gpsStatusMessage, setGpsStatusMessage] = useState<string | null>(null);
-  const [centerOnGpsTrigger, setCenterOnGpsTrigger] = useState<number>(0);
-
-  // Ref to hold current discoveredTileIds to avoid stale closures in geolocation callbacks
-  const discoveredTileIdsRef = useRef<string[]>([]);
-  useEffect(() => {
-    discoveredTileIdsRef.current = discoveredTileIds;
-  }, [discoveredTileIds]);
+  // Live Location & GPS Exploration Hook
+  const {
+    liveLocationEnabled,
+    currentGpsCoords,
+    gpsStatusMessage,
+    centerOnGpsTrigger,
+    handleToggleLiveLocation,
+    getCurrentLocation,
+  } = useLiveLocation({
+    currentUser,
+    discoveredTileIdsRef,
+    onTileUnlocked: fetchDiscoveryTiles,
+    onModeActivated: () => setMobileView('map'),
+  });
 
   // Fetch barriers from API
   const fetchBarriers = useCallback(async () => {
@@ -74,213 +92,6 @@ export default function Home() {
       console.warn('Nie udało się pobrać listy barier:', err);
     }
   }, []);
-
-  // Fetch discovery tiles for current user (or guest)
-  const fetchDiscoveryTiles = useCallback(async () => {
-    try {
-      const url = currentUser?.id ? `/api/discovery/my-tiles?user_id=${currentUser.id}` : '/api/discovery/my-tiles';
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        const tiles = data.tiles || [];
-        const disc: string[] = tiles.map((t: any) => t.tile_id);
-        const audited: string[] = tiles
-          .filter((t: any) => t.has_photo_contribution)
-          .map((t: any) => t.tile_id);
-        setDiscoveredTileIds(disc);
-        setAuditedTileIds(audited);
-        const rank = calculateUserRank(disc.length, audited.length);
-        setUserRank(rank);
-      }
-    } catch (err) {
-      console.warn('Nie udało się pobrać kafli eksploracji:', err);
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    fetchDiscoveryTiles();
-  }, [fetchDiscoveryTiles]);
-
-  // Check and unlock tile when user physically enters it with GPS in Live Location mode
-  const checkAndUnlockLiveTile = useCallback(
-    async (lat: number, lng: number) => {
-      const tile = coordsToTile(lat, lng);
-      if (!tile) return; // Outside Krakow exploration bounding box
-
-      // Only unlock if not already discovered
-      if (discoveredTileIdsRef.current.includes(tile.tileId)) {
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/discovery/unlock', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: currentUser?.id,
-            tile_ids: [tile.tileId],
-            has_photo: false,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.newly_unlocked_tiles && data.newly_unlocked_tiles.length > 0) {
-            setGpsStatusMessage(`Odkryto kafel: ${tile.tileId} (+10 XP)!`);
-            setTimeout(() => setGpsStatusMessage(null), 4500);
-          }
-          if (data.user_rank) {
-            setUserRank(data.user_rank);
-          }
-          fetchDiscoveryTiles();
-        }
-      } catch (err) {
-        console.warn('Błąd podczas odblokowywania kafelka GPS:', err);
-      }
-    },
-    [currentUser, fetchDiscoveryTiles]
-  );
-
-  // Toggle Live Location mode
-  const handleToggleLiveLocation = useCallback(
-    (enabled: boolean) => {
-      if (enabled) {
-        if (!('geolocation' in navigator)) {
-          alert('Geolokalizacja nie jest wspierana w Twojej przeglądarce.');
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setLiveLocationEnabled(true);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('krakow_live_location_mode', 'true');
-            }
-            const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            setCurrentGpsCoords(coords);
-            setCenterOnGpsTrigger(Date.now());
-            // Automatically switch to map view so user immediately sees their live location
-            setMobileView('map');
-            checkAndUnlockLiveTile(coords.lat, coords.lng);
-          },
-          (err) => {
-            console.warn('Geolocation permission error:', err);
-            setLiveLocationEnabled(false);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('krakow_live_location_mode', 'false');
-            }
-            alert(
-              'Aby włączyć tryb „Lokalizacja na żywo”, musisz zezwolić przeglądarce na dostęp do lokalizacji GPS.'
-            );
-          },
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
-      } else {
-        setLiveLocationEnabled(false);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('krakow_live_location_mode', 'false');
-        }
-        setCurrentGpsCoords(null);
-        setGpsStatusMessage(null);
-        setCenterOnGpsTrigger(0);
-      }
-    },
-    [checkAndUnlockLiveTile]
-  );
-
-  // Restore saved live location preference on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('krakow_live_location_mode');
-      if (saved === 'true') {
-        handleToggleLiveLocation(true);
-      }
-    }
-  }, [handleToggleLiveLocation]);
-
-  // Periodic GPS watching when liveLocationEnabled is true
-  useEffect(() => {
-    if (!liveLocationEnabled || !('geolocation' in navigator)) return;
-
-    let lastCheckTime = 0;
-    const THROTTLE_MS = 4000;
-
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setCurrentGpsCoords({ lat, lng });
-
-        const now = Date.now();
-        if (now - lastCheckTime > THROTTLE_MS) {
-          lastCheckTime = now;
-          checkAndUnlockLiveTile(lat, lng);
-        }
-      },
-      (err) => {
-        console.warn('GPS watch error:', err);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 4000,
-        timeout: 10000,
-      }
-    );
-
-    // Fallback interval check every 15s
-    const intervalId = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setCurrentGpsCoords({ lat, lng });
-          checkAndUnlockLiveTile(lat, lng);
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    }, 15000);
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-      clearInterval(intervalId);
-    };
-  }, [liveLocationEnabled, checkAndUnlockLiveTile]);
-
-  // Gamification: Unlock barrier tile with photo bonus (+100 XP / Golden tile)
-  const handleBarrierCreatedDiscovery = async (lat: number, lng: number, hasPhoto: boolean) => {
-    const tile = coordsToTile(lat, lng);
-    if (!tile) return;
-
-    try {
-      const res = await fetch('/api/discovery/unlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: currentUser?.id,
-          tile_ids: [tile.tileId],
-          has_photo: hasPhoto,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user_rank) {
-          setUserRank(data.user_rank);
-        }
-        fetchDiscoveryTiles();
-      }
-    } catch (err) {
-      console.warn('Błąd podczas odblokowywania kafelka po zgłoszeniu bariery:', err);
-    }
-  };
-
-  // Handle Purge Bad Actor callback
-  const handlePurgeComplete = useCallback((_result: BadActorPurgeResult) => {
-    fetchBarriers();
-    fetchDiscoveryTiles();
-    if (startPoint && endPoint) {
-      handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
-    }
-  }, [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile]);
 
   useEffect(() => {
     fetchBarriers();
@@ -312,37 +123,12 @@ export default function Home() {
       const data: RouteResult = await res.json();
       setRoute(data);
 
-      // Gamification: Unlock tiles intersected by this route (+10 XP per tile) ONLY if liveLocationEnabled is FALSE!
-      // In Live Location mode, tiles are ONLY unlocked by physical GPS traversal!
-      if (!liveLocationEnabled && data.geometry?.coordinates && data.geometry.coordinates.length > 0) {
-        const routeTiles = routeToTiles(data.geometry.coordinates);
-        if (routeTiles.length > 0) {
-          try {
-            const unlockRes = await fetch('/api/discovery/unlock', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                user_id: currentUser?.id,
-                tile_ids: routeTiles,
-                has_photo: false,
-              }),
-            });
-            if (unlockRes.ok) {
-              const unlockData = await unlockRes.json();
-              if (unlockData.user_rank) {
-                setUserRank(unlockData.user_rank);
-              }
-              fetchDiscoveryTiles();
-            }
-          } catch (unlockErr) {
-            console.warn('Błąd podczas odblokowywania kafelków trasy:', unlockErr);
-          }
-        }
+      // In Planner mode (liveLocationEnabled = false), unlock tiles along the calculated route
+      if (!liveLocationEnabled && data.geometry?.coordinates) {
+        await unlockRouteTiles(data.geometry.coordinates);
       }
 
-      // Stay on navigation tab
       setActiveTab('navigation');
-      // On mobile, show the route on the map
       setMobileView('map');
     } catch (err: any) {
       setErrorMessage(err.message || 'Wystąpił nieoczekiwany błąd');
@@ -351,47 +137,49 @@ export default function Home() {
     }
   };
 
-  // Handle Map Click - does NOT switch tab when on navigation!
-  const handleMapClick = useCallback((coords: { lat: number; lng: number }) => {
-    if (activeTab === 'navigation') {
-      if (pickingTarget === 'start') {
-        setStartPoint(coords);
-        setPickingTarget(null);
-        // Switch back to panel on mobile after picking
-        setMobileView('panel');
-      } else if (pickingTarget === 'end') {
-        setEndPoint(coords);
-        setPickingTarget(null);
-        setMobileView('panel');
-      } else {
-        // By default in navigation mode, clicking sets destination
-        setEndPoint(coords);
+  // Handle Purge Bad Actor callback
+  const handlePurgeComplete = useCallback(
+    (_result: BadActorPurgeResult) => {
+      fetchBarriers();
+      fetchDiscoveryTiles();
+      if (startPoint && endPoint) {
+        handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
       }
-      return;
-    }
+    },
+    [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile]
+  );
 
-    if (activeTab === 'crowdsource') {
-      setPickedLocation(coords);
-      setMobileView('panel');
-    }
-  }, [activeTab, pickingTarget]);
+  // Handle Map Click
+  const handleMapClick = useCallback(
+    (coords: { lat: number; lng: number }) => {
+      if (activeTab === 'navigation') {
+        if (pickingTarget === 'start') {
+          setStartPoint(coords);
+          setPickingTarget(null);
+          setMobileView('panel');
+        } else if (pickingTarget === 'end') {
+          setEndPoint(coords);
+          setPickingTarget(null);
+          setMobileView('panel');
+        } else {
+          setEndPoint(coords);
+        }
+        return;
+      }
+
+      if (activeTab === 'crowdsource') {
+        setPickedLocation(coords);
+        setMobileView('panel');
+      }
+    },
+    [activeTab, pickingTarget]
+  );
 
   // Handle Geolocation button in AddBarrierForm
-  const handleUseCurrentLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setPickedLocation({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
-        },
-        () => {
-          alert('Nie udało się pobrać Twojej lokalizacji GPS.');
-        }
-      );
-    } else {
-      alert('Geolokalizacja nie jest wspierana w tej przeglądarce.');
+  const handleUseCurrentLocation = async () => {
+    const coords = await getCurrentLocation();
+    if (coords) {
+      setPickedLocation(coords);
     }
   };
 
@@ -413,7 +201,7 @@ export default function Home() {
               ♿
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-extrabold tracking-tight leading-tight">
+              <h1 className="text-base sm:lg font-extrabold tracking-tight leading-tight">
                 Kraków bez barier
               </h1>
               <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[280px] sm:max-w-none">
@@ -458,7 +246,7 @@ export default function Home() {
         <DiscoveryBanner
           userRank={userRank}
           showDiscoveryGrid={showDiscoveryGrid}
-          onToggleDiscoveryGrid={() => setShowDiscoveryGrid((prev) => !prev)}
+          onToggleDiscoveryGrid={toggleDiscoveryGrid}
           unlockedTilesCount={discoveredTileIds.length}
           auditedPhotosCount={auditedTileIds.length}
           liveLocationEnabled={liveLocationEnabled}
@@ -575,7 +363,7 @@ export default function Home() {
                   onBarrierCreated={(info) => {
                     fetchBarriers();
                     if (info) {
-                      handleBarrierCreatedDiscovery(info.latitude, info.longitude, info.hasPhoto);
+                      unlockBarrierTile(info.latitude, info.longitude, info.hasPhoto);
                     }
                     if (startPoint && endPoint) {
                       handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');

@@ -5,6 +5,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Barrier } from '@/types/barrier';
 import { KRAKOW_GRID_CONFIG, parseTileId, tileToBounds } from '@/services/grid';
+import {
+  createStartIcon,
+  createEndIcon,
+  createPickedIcon,
+  createUserGpsIcon,
+  createBarrierIcon,
+  createBarrierPopupHtml,
+} from './mapIcons';
 
 interface AccessibleMapProps {
   start?: { lat: number; lng: number } | null;
@@ -179,40 +187,22 @@ export default function AccessibleMap({
 
     // Add Start Marker (A)
     if (start) {
-      const startIcon = L.divIcon({
-        className: 'custom-start-marker',
-        html: `<div style="background-color:#16a34a;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);">A</div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
-      L.marker([start.lat, start.lng], { icon: startIcon, title: 'Punkt Startowy (A)' })
+      L.marker([start.lat, start.lng], { icon: createStartIcon(), title: 'Punkt Startowy (A)' })
         .addTo(markersLayer)
         .bindPopup('<strong>Punkt startowy (A)</strong>');
     }
 
     // Add End Marker (B)
     if (end) {
-      const endIcon = L.divIcon({
-        className: 'custom-end-marker',
-        html: `<div style="background-color:#dc2626;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.4);">B</div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
-      L.marker([end.lat, end.lng], { icon: endIcon, title: 'Punkt Docelowy (B)' })
+      L.marker([end.lat, end.lng], { icon: createEndIcon(), title: 'Punkt Docelowy (B)' })
         .addTo(markersLayer)
         .bindPopup('<strong>Punkt docelowy (B)</strong>');
     }
 
     // Add Selected / Picked Marker
     if (selectedLocation) {
-      const pickedIcon = L.divIcon({
-        className: 'custom-picked-marker',
-        html: `<div style="background-color:#9333ea;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:3px solid white;box-shadow:0 0 10px rgba(147,51,234,0.7);">📍</div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
       L.marker([selectedLocation.lat, selectedLocation.lng], {
-        icon: pickedIcon,
+        icon: createPickedIcon(),
         title: 'Wybrana lokalizacja',
       })
         .addTo(markersLayer)
@@ -221,46 +211,10 @@ export default function AccessibleMap({
 
     // Add Barrier Markers
     barriers.forEach((b) => {
-      const isStairs = b.barrier_type === 'STAIRS';
-      const bgColor = isStairs ? '#b91c1c' : '#d97706';
-      const symbol = isStairs ? '🪜' : '⚠️';
-
-      const barrierIcon = L.divIcon({
-        className: 'custom-barrier-marker',
-        html: `<div style="background-color:${bgColor};color:white;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);" title="${b.barrier_type}">${symbol}</div>`,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      });
-
-      const detailsStr = Object.entries(b.details || {})
-        .filter(([k]) => k !== 'images' && k !== 'original_links')
-        .map(([k, v]) => `<li><strong>${k}:</strong> ${v}</li>`)
-        .join('');
-
-      const hasImages = (b.details?.images && Array.isArray(b.details.images) && b.details.images.length > 0) || !!b.image_url;
-      const photoBadge = hasImages ? '<div style="margin-top:4px;color:#2563eb;font-weight:bold;font-size:11px;">📷 Dostępne zdjęcia w panelu</div>' : '';
-
-      const popupHtml = `
-        <div style="min-width: 200px; font-family: sans-serif; font-size: 13px;">
-          <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: bold; color: #111;">
-            ${b.barrier_type}
-          </h3>
-          <p style="margin: 0 0 6px 0; color: #444;">${b.address_description || 'Brak opisu adresu'}</p>
-          <ul style="margin: 0 0 6px 0; padding-left: 16px; color: #333;">
-            ${detailsStr}
-          </ul>
-          ${photoBadge}
-          <div style="font-size: 11px; color: #666; border-top: 1px solid #eee; padding-top: 4px; margin-top: 4px;">
-            <div><strong>Źródło:</strong> ${b.source}</div>
-            <div><strong>Wiarygodność:</strong> ${(b.confidence_score * 100).toFixed(0)}% (${b.status})</div>
-          </div>
-        </div>
-      `;
-
       const marker = L.marker([b.latitude, b.longitude], {
-        icon: barrierIcon,
+        icon: createBarrierIcon(b),
         title: `Bariera: ${b.barrier_type} (${b.address_description || ''})`,
-      }).bindPopup(popupHtml);
+      }).bindPopup(createBarrierPopupHtml(b));
 
       marker.on('click', () => {
         if (onSelectBarrierRef.current) {
@@ -364,20 +318,8 @@ export default function AccessibleMap({
 
     if (!currentGpsCoords) return;
 
-    const userGpsIcon = L.divIcon({
-      className: 'custom-user-gps-marker',
-      html: `
-        <div style="position:relative;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;width:24px;height:24px;background-color:#0284c7;opacity:0.4;border-radius:50%;animation:ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          <div style="width:14px;height:14px;background-color:#0284c7;border:2.5px solid white;border-radius:50%;box-shadow:0 0 8px rgba(2,132,199,0.9);z-index:2;"></div>
-        </div>
-      `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    });
-
     const marker = L.marker([currentGpsCoords.lat, currentGpsCoords.lng], {
-      icon: userGpsIcon,
+      icon: createUserGpsIcon(),
       zIndexOffset: 1000,
       title: 'Twoja aktualna pozycja GPS',
     }).bindPopup('<strong>Twoja pozycja GPS (na żywo)</strong>');
