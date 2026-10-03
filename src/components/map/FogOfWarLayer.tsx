@@ -59,36 +59,40 @@ export default function FogOfWarLayer({
     });
     layer.addLayer(boundaryRect);
 
-    // 2. Draw Discovered & Audited Tiles
-    for (const tileId of discoveredSet) {
-      const parsed = parseTileId(tileId);
-      if (!parsed) continue;
+    // 2. Draw Undiscovered Tiles (Fog of War)
+    // Discovered tiles disappear (fog is lifted, revealing the map underneath)
+    for (let y = 0; y < KRAKOW_GRID_CONFIG.ROWS; y++) {
+      for (let x = 0; x < KRAKOW_GRID_CONFIG.COLS; x++) {
+        const tileId = `${x}_${y}`;
+        if (discoveredSet.has(tileId)) {
+          // Odkryty kafelek -> mgła znika (kafelek znika z mapy)
+          continue;
+        }
 
-      const bounds = tileToBounds(parsed.x, parsed.y);
-      const isAudited = auditedSet.has(tileId);
+        const bounds = tileToBounds(x, y);
+        const rect = L.rectangle(bounds, {
+          color: '#64748b',
+          weight: 1,
+          opacity: 0.25, // Zwiększona przezroczystość obramówki
+          fillColor: '#475569',
+          fillOpacity: 0.22,
+          interactive: true,
+        });
 
-      const rect = L.rectangle(bounds, {
-        color: isAudited ? '#d97706' : '#0284c7', // Gold vs Cyan
-        weight: isAudited ? 2 : 1.5,
-        fillColor: isAudited ? '#fbbf24' : '#38bdf8',
-        fillOpacity: isAudited ? 0.38 : 0.22,
-        interactive: true,
-      });
+        rect.bindTooltip(
+          `<div style="font-size:11px; font-weight:bold; color:#334155;">🌫️ Kafel nieodkryty #${tileId}</div><div style="font-size:10px; color:#64748b;">Przejdź tędy lub włącz GPS, aby odkryć</div>`,
+          {
+            sticky: true,
+            className: 'discovery-tile-tooltip',
+          }
+        );
 
-      const tooltipContent = isAudited
-        ? `<div style="font-size:11px; font-weight:bold; color:#b45309;">📸 Złoty Kafelek #${tileId}</div><div style="font-size:10px; color:#444;">Zaudytowany ze zdjęciem przeszkody (+100 XP)</div>`
-        : `<div style="font-size:11px; font-weight:bold; color:#0369a1;">🟦 Odkryty Kafelek #${tileId}</div><div style="font-size:10px; color:#444;">Odwiedzony obszar (+10 XP)</div>`;
+        if (onTileClick) {
+          rect.on('click', () => onTileClick(tileId));
+        }
 
-      rect.bindTooltip(tooltipContent, {
-        sticky: true,
-        className: 'discovery-tile-tooltip',
-      });
-
-      if (onTileClick) {
-        rect.on('click', () => onTileClick(tileId));
+        layer.addLayer(rect);
       }
-
-      layer.addLayer(rect);
     }
 
     return () => {

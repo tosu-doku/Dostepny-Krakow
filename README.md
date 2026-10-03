@@ -126,10 +126,13 @@ W celu aktywizacji społeczności do realnego mapowania barier architektonicznyc
   * Algorytm $O(1)$: konwersja współrzędnych i wyznaczanie geometrii w pamięci przeglądarki bez obciążających bibliotek GIS.
 * **Ochrona Prywatności (Privacy by Design):**
   * W bazie **nie są zapisywane** surowe koordynaty ani ślady GPS użytkowników. Serwer przechowuje jedynie unikalne identyfikatory zaliczonych kafelków (`tile_x`, `tile_y`).
-* **Punktacja XP i Złote Kafelki:**
-  * **+10 XP** za odkrycie kafelka (kolor cyjanowy),
+* **Mechanizm Wizualny Mgły Wojny (Fog of War):**
+  * **Kafelki nieodkryte są widoczne:** Tworzą jednolitą, półprzezroczystą mgłę (`fillOpacity: 0.22`) z elegancką, zwiększoną przezroczystością obramówek (`opacity: 0.25`), nie zasłaniając nazw ulic pod spodem.
+  * **Kafelki odkryte znikają:** Po przebyciu sektora (trasą lub GPS) mgła rozwiewa się, odsłaniając czystą mapę miasta.
+* **Punktacja XP i Odznaki:**
+  * **+10 XP** za odkrycie kafelka i rozproszenie mgły,
   * **+50 XP** za zgłoszenie bariery architektonicznej,
-  * **+100 XP** za zgłoszenie bariery **ze zdjęciem** – zamienia kafel w prestiżowy **Złoty Kafel Zaadytowany 🏆** z ikoną aparatu 📷.
+  * **+100 XP** za zgłoszenie bariery **ze zdjęciem** (kluczowy dowód audytu ze znacznikiem na mapie).
 * **Dwa Tryby Eksploracji (Przełącznik w profilu użytkownika):**
   1. **Tryb Planera (Domyślny, toggle OFF):** Kafelki odblokowują się automatycznie wzdłuż wyznaczanych tras miejskich A $\to$ B.
   2. **Tryb Wędrówki na żywo (Toggle ON, GPS):**

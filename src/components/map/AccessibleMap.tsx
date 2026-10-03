@@ -316,40 +316,42 @@ export default function AccessibleMap({
     );
     boundsPoly.addTo(discoveryLayer);
 
-    const auditedSet = new Set(auditedTileIds);
+    const discoveredSet = new Set(discoveredTileIds);
 
-    // B. Draw Discovered Tiles (Cyan/Blue) & Audited Tiles (Golden)
-    for (const tileId of discoveredTileIds) {
-      const isAudited = auditedSet.has(tileId);
-      const parsed = parseTileId(tileId);
-      if (!parsed) continue;
-
-      const bounds = tileToBounds(parsed.x, parsed.y);
-      const rect = L.rectangle(bounds, {
-        color: isAudited ? '#d97706' : '#0891b2',
-        weight: 1.5,
-        fillColor: isAudited ? '#fbbf24' : '#22d3ee',
-        fillOpacity: isAudited ? 0.38 : 0.22,
-        interactive: true,
-      });
-
-      const statusText = isAudited
-        ? '🏆 Kafel Zaadytowany (Zdjęcie bariery! +100 XP)'
-        : '🧭 Kafel Odkryty (+10 XP)';
-
-      rect.bindTooltip(
-        `<div style="font-size:12px;font-weight:600;">${statusText}</div><div style="font-size:10px;color:#666;">ID: ${tileId}</div>`,
-        { sticky: true }
-      );
-
-      rect.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        if (onTileClickRef.current) {
-          onTileClickRef.current(tileId);
+    // B. Draw Undiscovered Tiles (Fog of War)
+    // Discovered tiles disappear (fog is lifted, revealing the map underneath)
+    for (let y = 0; y < KRAKOW_GRID_CONFIG.ROWS; y++) {
+      for (let x = 0; x < KRAKOW_GRID_CONFIG.COLS; x++) {
+        const tileId = `${x}_${y}`;
+        if (discoveredSet.has(tileId)) {
+          // Odkryty kafelek -> mgła znika (kafelek znika z mapy)
+          continue;
         }
-      });
 
-      rect.addTo(discoveryLayer);
+        const bounds = tileToBounds(x, y);
+        const rect = L.rectangle(bounds, {
+          color: '#64748b',       // Elegancka, subtelna ramka
+          weight: 1,              // Cienka linia
+          opacity: 0.25,          // Zwiększona przezroczystość obramówki
+          fillColor: '#475569',   // Mgła wojny
+          fillOpacity: 0.22,      // Półprzezroczysta mgła odsłaniająca zarys ulic
+          interactive: true,
+        });
+
+        rect.bindTooltip(
+          `<div style="font-size:12px;font-weight:600;color:#1e293b;">🌫️ Kafel nieodkryty (Mgła)</div><div style="font-size:10px;color:#64748b;">Przejdź tędy lub włącz lokalizację na żywo • ID: ${tileId}</div>`,
+          { sticky: true }
+        );
+
+        rect.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          if (onTileClickRef.current) {
+            onTileClickRef.current(tileId);
+          }
+        });
+
+        rect.addTo(discoveryLayer);
+      }
     }
   }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds]);
 

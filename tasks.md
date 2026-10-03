@@ -57,10 +57,11 @@
     - Zero śledzenia trajektorii GPS – zapisujemy wyłącznie dyskretne identyfikatory kafelków (`tile_x`, `tile_y`).
     - Tabela relacyjna w Supabase/PostgreSQL: `public.user_discovered_tiles(user_id, tile_x, tile_y, tile_id, has_photo_contribution, unlocked_at)` z kluczem unikalnym `UNIQUE(user_id, tile_x, tile_y)`.
     - Widok agregacyjny `public.city_exploration_stats` do pomiaru globalnego audytu miasta.
-  - **Gamifikacja & motywacja do zdjęć:**
-    - Dwa stany odblokowania kafelka na mapie:
-      - *Kafel Odkryty* (kolor błękitno-cyjanowy, +10 XP za pokonanie trasy przez kafel).
-      - *Kafel Zaadytowany* (kolor złoty 🏆 z ikoną aparatu 📷, +100 XP za dodanie zdjęcia bariery architektonicznej!).
+  - **Gamifikacja & motywacja do zdjęć (Mgła Wojny / Fog of War):**
+    - Prawdziwy mechanizm Mgły Wojny:
+      - **Kafelki nieodkryte są widoczne** jako subtelna mgła (`fillColor: #475569`, `fillOpacity: 0.22`) z elegancką, zwiększoną przezroczystością obramówek (`opacity: 0.25`, `weight: 1`), co zachowuje czytelność siatki ulic pod spodem.
+      - **Kafelki odkryte znikają** – po przejściu trasy lub fizycznym wejściu z włączonym GPS mgła się rozwiewa, odsłaniając czystą mapę.
+      - Kafelki zaudytowane (ze zdjęciem bariery) dają +100 XP i są widoczne bezpośrednio jako punkty POI z barierami i zdjęciami.
     - Progresja rang: *Nowicjusz z Plant (Lvl 1)* -> *Krakowski Przechodzień (Lvl 2)* -> *Eksplorator Starego Miasta (Lvl 3)* -> *Kartograf Dostępności (Lvl 4)* -> *Mistrz Krakowa bez Barier (Lvl 5)*.
   - **Wdrożenie frontend & backend:**
     - Silnik siatki `src/services/grid.ts`: czysta matematyka $O(1)$, próbkowanie wektora trasy `routeToTiles` co ~35 m, obliczanie rang i progów XP.
