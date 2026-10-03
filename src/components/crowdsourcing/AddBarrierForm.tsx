@@ -2,18 +2,21 @@
 
 import { useState } from 'react';
 import { BarrierType } from '@/types/barrier';
-import { Camera, MapPin, PlusCircle, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { User } from '@/types/user';
+import { Camera, MapPin, PlusCircle, Check, AlertCircle, Loader2, UserCheck, UserX } from 'lucide-react';
 
 interface AddBarrierFormProps {
   selectedLocation: { lat: number; lng: number } | null;
   onBarrierCreated: () => void;
   onSelectCurrentLocation: () => void;
+  currentUser?: User | null;
 }
 
 export default function AddBarrierForm({
   selectedLocation,
   onBarrierCreated,
   onSelectCurrentLocation,
+  currentUser,
 }: AddBarrierFormProps) {
   const [barrierType, setBarrierType] = useState<BarrierType>('STAIRS');
   const [addressDescription, setAddressDescription] = useState('');
@@ -62,6 +65,10 @@ export default function AddBarrierForm({
         formData.append('photo', photoFile);
       }
 
+      if (currentUser?.id) {
+        formData.append('created_by', currentUser.id);
+      }
+
       const res = await fetch('/api/barriers', {
         method: 'POST',
         body: formData,
@@ -105,6 +112,25 @@ export default function AddBarrierForm({
             Pomóż innym mieszkańcom Krakowa tworzyć rzetelną bazę przeszkód.
           </p>
         </div>
+      </div>
+
+      {/* Informacja o autorze zgłoszenia */}
+      <div className="p-2.5 rounded-lg border text-xs flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700">
+        {currentUser ? (
+          <>
+            <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="text-zinc-700 dark:text-zinc-300">
+              Autor zgłoszenia: <strong className="text-zinc-900 dark:text-zinc-100">{currentUser.nickname}</strong>
+            </span>
+          </>
+        ) : (
+          <>
+            <UserX className="w-4 h-4 text-zinc-400 shrink-0" />
+            <span className="text-zinc-500">
+              Zgłoszenie anonimowe. Zaloguj się na górze strony, aby powiązać zgłoszenie z Twoim kontem.
+            </span>
+          </>
+        )}
       </div>
 
       {/* Wybór Lokalizacji */}

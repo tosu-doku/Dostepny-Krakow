@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createBarrier, getAllBarriers, uploadBarrierImage } from '@/services/barriers';
 import { BarrierType, CreateBarrierInput } from '@/types/barrier';
+import { AUTH_COOKIE_NAME, verifySessionToken } from '@/services/auth';
 
 export async function GET() {
   try {
@@ -21,6 +22,12 @@ export async function POST(req: NextRequest) {
     let barrierInput: CreateBarrierInput;
     let uploadedImageUrl: string | null = null;
 
+    // Detect authenticated user from session cookie or auth header
+    const sessionCookie = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+    const authHeader = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+    const token = sessionCookie || authHeader;
+    const sessionUser = token ? verifySessionToken(token) : null;
+
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
       const barrierType = (formData.get('barrier_type') as BarrierType) || 'STAIRS';
@@ -28,6 +35,7 @@ export async function POST(req: NextRequest) {
       const longitude = parseFloat(formData.get('longitude') as string);
       const addressDescription = (formData.get('address_description') as string) || '';
       const rawDetails = formData.get('details');
+      const explicitCreatedBy = formData.get('created_by') as string | null;
 
       let details: Record<string, any> = {};
       if (typeof rawDetails === 'string') {
@@ -56,6 +64,7 @@ export async function POST(req: NextRequest) {
         status: 'UNVERIFIED',
         confidence_score: 0.5,
         image_url: uploadedImageUrl,
+        created_by: sessionUser?.id || explicitCreatedBy || null,
       };
     } else {
       const body = await req.json();
@@ -69,6 +78,7 @@ export async function POST(req: NextRequest) {
         status: body.status || 'UNVERIFIED',
         confidence_score: typeof body.confidence_score === 'number' ? body.confidence_score : 0.5,
         image_url: body.image_url || null,
+        created_by: sessionUser?.id || body.created_by || null,
       };
     }
 

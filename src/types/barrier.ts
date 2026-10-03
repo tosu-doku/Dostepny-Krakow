@@ -70,4 +70,5 @@ export interface CreateBarrierInput {
   status?: VerificationStatus;
   confidence_score?: number;
   image_url?: string | null;
+  created_by?: string | null;
 }

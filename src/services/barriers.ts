@@ -1,5 +1,6 @@
 import { Barrier, BarrierType, CreateBarrierInput, VerificationStatus } from '@/types/barrier';
 import { getSupabaseAdmin, getSupabaseClient } from './supabase';
+import { isUserBanned } from './auth';
 
 /**
  * Parses PostGIS geometry in various formats (EWKB hex, WKT string, GeoJSON object)
@@ -131,7 +132,9 @@ export async function getAllBarriers(): Promise<Barrier[]> {
     return [];
   }
 
-  const normalized = (data || []).map(normalizeBarrierRow);
+  const normalized = (data || [])
+    .map(normalizeBarrierRow)
+    .filter((b) => !isUserBanned(b.created_by));
   return deduplicateBarriers(normalized);
 }
 
@@ -158,7 +161,9 @@ export async function getBarriersAlongRoute(
     });
 
     if (!error && Array.isArray(data)) {
-      return deduplicateBarriers(data.map(normalizeBarrierRow));
+      return deduplicateBarriers(
+        data.map(normalizeBarrierRow).filter((b) => !isUserBanned(b.created_by))
+      );
     }
 
     if (error) {
@@ -208,6 +213,7 @@ export async function createBarrier(input: CreateBarrierInput): Promise<Barrier>
     confidence_score: typeof input.confidence_score === 'number' ? input.confidence_score : 0.5,
     last_verified_at: new Date().toISOString(),
     image_url: input.image_url || null,
+    created_by: input.created_by || null,
   };
 
   const { data, error } = await supabase

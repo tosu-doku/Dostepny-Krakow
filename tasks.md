@@ -31,3 +31,14 @@
   - Dostosowano targety dotykowe min. 44x44px (zgodnie z WCAG 2.2 Target Size) dla przycisków, pól formularzy i selektora profili (`grid-cols-1 sm:grid-cols-2`).
   - Zapewniono automatyczne przełączanie na mapę po kliknięciu *„Wskaż na mapie”* oraz przycisk szybkiego powrotu do wskazówek trasy.
   - Zoptymalizowano nagłówek i formularz zgłaszania przeszkód dla małych ekranów smartfonów.
+
+- [x] **Zadanie 8: Podstawowe konto użytkownika, bezpieczeństwo bazy i Bad Actor Purge**
+  - **Model Użytkownika:** tabela `public.users` z polami: `id UUID`, `nickname TEXT UNIQUE`, `email TEXT UNIQUE`, `password_hash TEXT`, `created_at TIMESTAMPTZ`, `updated_at TIMESTAMPTZ`, `is_banned BOOLEAN`, `role TEXT`.
+  - **Bezpieczeństwo Haseł i Sesji:** kryptograficzne hashowanie haseł algorytmem `scrypt` z losową solą 16-bajtową (`node:crypto`), weryfikacja w stałym czasie `timingSafeEqual`, bezpieczne tokeny sesyjne w ciasteczkach `httpOnly`.
+  - **Przypisanie Zgłoszeń i Zdjęć:** zgłoszenia z formularza crowdsourcingu automatycznie wiążą się z zalogowanym użytkownikiem (`created_by`), informując o statusie w formularzu.
+  - **Bad Actor Purge:** wdrożono procedurę PostgreSQL RPC `purge_bad_actor_contributions(target_user_id UUID)` ze statusem `SECURITY DEFINER` oraz endpoint `/api/admin/purge-bad-actor` i modal UI, które:
+    - natychmiastowo blokują konto spamera (`is_banned = true`),
+    - usuwają wszystkie zgłoszone przez niego bariery z bazy PostGIS,
+    - usuwają wgrane przez niego zdjęcia bezpośrednio z bucketa Supabase Storage (`barriers`).
+  - **Dokumentacja i Migracja SQL:** przygotowano plik migracji `supabase/migrations/20261003_create_users_and_bad_actor_purge.sql` oraz zaktualizowano `DATA_MODEL.md` (sekcje 9–13) z gotowym do uruchomienia kodem SQL.
+

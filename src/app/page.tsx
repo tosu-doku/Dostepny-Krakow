@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { RouteResult, NavigationProfile } from '@/types/routing';
 import { Barrier } from '@/types/barrier';
+import { User, BadActorPurgeResult } from '@/types/user';
 import RoutePlanner from '@/components/navigation/RoutePlanner';
 import RouteObstacleList from '@/components/navigation/RouteObstacleList';
 import AddBarrierForm from '@/components/crowdsourcing/AddBarrierForm';
+import UserAccountMenu from '@/components/auth/UserAccountMenu';
 import { ShieldCheck, Map as MapIcon, PlusCircle, AlertCircle, Compass, ListFilter } from 'lucide-react';
 
 // Dynamically import Leaflet Map to prevent SSR errors
@@ -38,6 +40,7 @@ export default function Home() {
   });
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pickingTarget, setPickingTarget] = useState<'start' | 'end' | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Fetch barriers from API
   const fetchBarriers = useCallback(async () => {
@@ -51,6 +54,14 @@ export default function Home() {
       console.warn('Nie udało się pobrać listy barier:', err);
     }
   }, []);
+
+  // Handle Purge Bad Actor callback
+  const handlePurgeComplete = useCallback((_result: BadActorPurgeResult) => {
+    fetchBarriers();
+    if (startPoint && endPoint) {
+      handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
+    }
+  }, [fetchBarriers, startPoint, endPoint, route?.profile]);
 
   useEffect(() => {
     fetchBarriers();
@@ -164,13 +175,18 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold self-start sm:self-auto">
-            <span className="px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 flex items-center gap-1.5">
+            <span className="hidden md:flex px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" aria-hidden="true" />
               WCAG 2.2 AA
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
+            <span className="hidden sm:inline px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
               PostGIS
             </span>
+            <UserAccountMenu
+              currentUser={currentUser}
+              onUserChange={setCurrentUser}
+              onPurgeComplete={handlePurgeComplete}
+            />
           </div>
         </div>
       </header>
@@ -294,6 +310,7 @@ export default function Home() {
                 <AddBarrierForm
                   selectedLocation={pickedLocation}
                   onSelectCurrentLocation={handleUseCurrentLocation}
+                  currentUser={currentUser}
                   onBarrierCreated={() => {
                     fetchBarriers();
                     if (startPoint && endPoint) {

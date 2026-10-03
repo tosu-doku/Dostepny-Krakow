@@ -138,3 +138,131 @@ VALUES
     now()
   );
 ```
+
+---
+
+## 9. Tabela Użytkowników (`public.users`) & Bezpieczeństwo Danych
+
+W celu powiązania zgłoszeń i zdjęć z użytkownikami, zbierania wiarygodnych danych oraz ochrony bazy przed nadużyciami (spamerzy / bad actors), wdrożono dedykowaną tabelę `public.users`.
+
+```sql
+-- 9. Tabela Użytkowników
+CREATE TABLE IF NOT EXISTS public.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nickname TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    is_banned BOOLEAN DEFAULT false NOT NULL,
+    role TEXT DEFAULT 'USER' NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_nickname ON public.users(nickname);
+
+-- 10. Powiązanie tabeli barier ze zgłaszającym użytkownikiem
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+          AND table_name = 'barriers' 
+          AND column_name = 'created_by'
+    ) THEN 
+        ALTER TABLE public.barriers ADD COLUMN created_by UUID;
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'fk_barriers_created_by'
+    ) THEN
+        ALTER TABLE public.barriers
+        ADD CONSTRAINT fk_barriers_created_by
+        FOREIGN KEY (created_by)
+        REFERENCES public.users(id)
+        ON DELETE SET NULL;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_barriers_created_by ON public.barriers(created_by);
+
+-- Polityka usuwania barier (dla procedury czyszczenia Bad Actora)
+DROP POLICY IF EXISTS "Zezwól na usuwanie barier" ON public.barriers;
+CREATE POLICY "Zezwól na usuwanie barier" 
+ON public.barriers FOR DELETE 
+USING (true);
+
+-- 11. Polityki Row Level Security dla tabeli users
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Zezwól na rejestrację kont" ON public.users;
+CREATE POLICY "Zezwól na rejestrację kont" 
+ON public.users FOR INSERT 
+WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Zezwól na odczyt kont przez aplikację" ON public.users;
+CREATE POLICY "Zezwól na odczyt kont przez aplikację" 
+ON public.users FOR SELECT 
+USING (true);
+
+DROP POLICY IF EXISTS "Zezwól na aktualizację konta" ON public.users;
+CREATE POLICY "Zezwól na aktualizację konta" 
+ON public.users FOR UPDATE 
+USING (true);
+
+-- 12. Procedura RPC do czyszczenia naruszeń Bad Actora (Purge)
+-- Blokuje konto użytkownika, usuwa jego wpisy z tabeli barier i zwraca URL-e wgranych zdjęć
+CREATE OR REPLACE FUNCTION public.purge_bad_actor_contributions(target_user_id UUID)
+RETURNS JSONB AS $$
+DECLARE
+    purged_barriers INT := 0;
+    deleted_image_urls TEXT[];
+    user_record public.users%ROWTYPE;
+BEGIN
+    SELECT * INTO user_record FROM public.users WHERE id = target_user_id;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Użytkownik o podanym ID nie istnieje');
+    END IF;
+
+    -- Oznacz jako zablokowany
+    UPDATE public.users 
+    SET is_banned = true, updated_at = now() 
+    WHERE id = target_user_id;
+
+    -- Pobierz adresy URL zdjęć do skasowania ze storage
+    SELECT COALESCE(ARRAY_AGG(image_url), ARRAY[]::TEXT[]) INTO deleted_image_urls
+    FROM public.barriers
+    WHERE created_by = target_user_id AND image_url IS NOT NULL;
+
+    -- Usuń bariery dodane przez użytkownika
+    WITH deleted_rows AS (
+        DELETE FROM public.barriers
+        WHERE created_by = target_user_id
+        RETURNING id
+    )
+    SELECT COUNT(*) INTO purged_barriers FROM deleted_rows;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'bad_actor_id', target_user_id,
+        'nickname', user_record.nickname,
+        'email', user_record.email,
+        'purged_barriers_count', purged_barriers,
+        'image_urls_to_remove', deleted_image_urls
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 13. Widok bezpiecznych profili publicznych
+CREATE OR REPLACE VIEW public.user_profiles AS
+SELECT 
+    u.id,
+    u.nickname,
+    u.created_at,
+    u.is_banned,
+    (SELECT COUNT(*) FROM public.barriers b WHERE b.created_by = u.id) AS contributions_count
+FROM public.users u;
+```
