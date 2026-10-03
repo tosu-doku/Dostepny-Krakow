@@ -194,25 +194,31 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
    ```
    Aplikacja dostępna pod adresem: `http://localhost:3000`.
 
-6. Uruchom testy jednostkowe i linter:
-   ```bash
-   # Uruchomienie pełnego zestawu testów (Vitest):
-   npm test
+## 🔄 10. Testy & Automatyzacja CI/CD (GitHub Actions)
 
-   # Uruchomienie lintera:
-   npm run lint
+Projekt wyposażono w pełny pakiet testów jednostkowych oraz zautomatyzowany proces Continuous Integration:
 
-   # Weryfikacja produkcyjna:
-   npm run build
-   ```
-
-7. **Pipeline CI/CD (GitHub Actions):**
-   * Projekt posiada skonfigurowany workflow `.github/workflows/ci.yml`.
-   * Przy każdym commicie i pull requeście automatycznie weryfikowana jest czystość kodu (ESLint), poprawność wszystkich 22 testów jednostkowych oraz stabilność produkcyjnego buildu Next.js.
+* **Runner testowy:** **Vitest** zintegrowany z Next.js App Router i TypeScript (czas wykonania całego pakietu: ~450 ms).
+* **22 testy jednostkowe:**
+  * `tests/grid.test.ts` – algorytm rzutowania współrzędnych $O(1)$, wyznaczanie granic kafelków, próbkowanie tras i mechanika poziomów/XP.
+  * `tests/routing.test.ts` – odległości Haversine, prędkości marszu dla profili (wózek inwalidzki, dziecięcy, pieszy), realistyczne kary czasowe za przeszkody architektoniczne.
+  * `tests/barriers.test.ts` – parsowanie geometrii PostGIS (GeoJSON Point, WKT, invalid), sanitizacja i normalizacja obiektów wg standardu WCAG/AGENTS.md.
+* **Dostępne komendy CLI:**
+  ```bash
+  npm test           # Uruchomienie pełnego pakietu 22 testów
+  npm run test:watch # Tryb ciągłego testowania z hot-reloadem (TDD)
+  npm run lint       # Analiza statyczna kodu ESLint
+  npm run build      # Produkcyjna kompilacja i kontrola typów
+  ```
+* **Pipeline GitHub Actions (`.github/workflows/ci.yml`):**
+  * Uruchamiany automatycznie przy każdym pushu i pull requeście (`main`, `feat/*`, `refactor/*`).
+  * Wykonuje sekwencję: instalacja czysta (`npm ci`), linter (`npm run lint`), testy jednostkowe (`npm test`) oraz build produkcyjny (`npm run build`).
+* **Scenariusze testów manualnych:**
+  * Szczegółowy przewodnik po wszystkich scenariuszach funkcjonalnych (UI oraz API cURL) znajduje się w dokumencie `TESTING.md`.
 
 ---
 
-## ♿ 10. Dostępność Cyfrowa (WCAG 2.2 AA)
+## ♿ 11. Dostępność Cyfrowa (WCAG 2.2 AA)
 * **Alternatywa dla mapy:** Dedykowany widok listy kroków („Krok po kroku”) z pełnym opisem przeszkód (np. *„Za 50 m: 4 stopnie w dół, brak podjazdu, nawierzchnia z kostki brukowej”*).
 * **Skróty klawiszowe:** Klawisz `Tab` przenosi logicznie przez wszystkie elementy aktywne, `Escape` zamyka modale, strzałki obsługują galerię.
 * **Tryb wysokiego kontrastu:** Wsparcie dla preferencji systemowych oraz kontrast tekstu min. 4.5:1.
@@ -220,7 +226,7 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
 
 ---
 
-## 💼 11. Model Biznesowy i Skalowalność
+## 💼 12. Model Biznesowy i Skalowalność
 * **B2G (Samorządy):** Narzędzie gotowe do wdrożenia w dowolnym mieście dzięki integracji ze standardem OpenStreetMap i PostGIS.
 * **B2B (Hotele, Gastronomia, Wydarzenia):** Widget do umieszczenia na stronach obiektów prezentujący dokładny profil dostępności dla gości o szczególnych potrzebach.
 * **Audyty Dostępności:** Narzędzie ułatwiające inwentaryzację barier i generowanie raportów do celów certyfikacji dostępności budynków.
