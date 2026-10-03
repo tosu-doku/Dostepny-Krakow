@@ -37,6 +37,13 @@ END $$;
 -- Utworzenie klucza obcego do public.users (jeśli jeszcze nie istnieje)
 DO $$
 BEGIN
+    -- [POPRAWKA] Wyczyszczenie osieroconych referencji przed nałożeniem klucza
+    UPDATE public.barriers 
+    SET created_by = NULL 
+    WHERE created_by IS NOT NULL 
+      AND created_by NOT IN (SELECT id FROM public.users);
+
+    -- Nałożenie klucza obcego
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'fk_barriers_created_by'
     ) THEN

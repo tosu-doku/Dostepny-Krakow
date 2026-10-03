@@ -95,6 +95,10 @@ CREATE POLICY "Zezwól na zgłaszanie barier (Crowdsourcing)"
 ON public.barriers FOR INSERT 
 WITH CHECK (true);
 
+CREATE POLICY "Zezwól na usuwanie barier" 
+ON public.barriers FOR DELETE 
+USING (true);
+
 -- 8. Przykładowe dane testowe (Kraków)
 INSERT INTO public.barriers (
   barrier_type, 
@@ -176,6 +180,13 @@ END $$;
 
 DO $$
 BEGIN
+    -- Wyczyszczenie osieroconych referencji przed nałożeniem klucza
+    UPDATE public.barriers 
+    SET created_by = NULL 
+    WHERE created_by IS NOT NULL 
+      AND created_by NOT IN (SELECT id FROM public.users);
+
+    -- Nałożenie klucza obcego
     IF NOT EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'fk_barriers_created_by'
     ) THEN
