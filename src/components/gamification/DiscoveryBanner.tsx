@@ -11,6 +11,8 @@ interface DiscoveryBannerProps {
   onToggleDiscoveryGrid: () => void;
   unlockedTilesCount: number;
   auditedPhotosCount: number;
+  liveLocationEnabled?: boolean;
+  gpsStatusMessage?: string | null;
 }
 
 export default function DiscoveryBanner({
@@ -20,6 +22,8 @@ export default function DiscoveryBanner({
   onToggleDiscoveryGrid,
   unlockedTilesCount,
   auditedPhotosCount,
+  liveLocationEnabled = false,
+  gpsStatusMessage = null,
 }: DiscoveryBannerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -45,9 +49,24 @@ export default function DiscoveryBanner({
               <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold text-[10px] border border-amber-400/30">
                 Poziom {level}
               </span>
+              {liveLocationEnabled ? (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 font-bold text-[10px] border border-emerald-400/50 flex items-center gap-1 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Wędrówka GPS (na żywo)
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-200 font-semibold text-[10px] border border-sky-400/30">
+                  Planer tras
+                </span>
+              )}
               <span className="text-[11px] text-indigo-200 font-mono">
                 {totalXp} XP
               </span>
+              {gpsStatusMessage && (
+                <span className="text-[10px] text-emerald-300 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 animate-bounce">
+                  ✨ {gpsStatusMessage}
+                </span>
+              )}
             </div>
 
             {/* XP Progress Bar */}
@@ -153,7 +172,11 @@ export default function DiscoveryBanner({
                     +10
                   </span>
                   <div>
-                    <strong>Przejście trasą przez kafelek (XP):</strong> Wyznaczając trasy miejskie odblokowujesz kolejne fragmenty mapy i usuwasz mgłę wojny.
+                    <strong>Przejście przez kafelek (XP):</strong> Zależnie od wybranego trybu w profilu:
+                    <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                      <li><strong>Tryb Planera (domyślny):</strong> Kafelki odblokowują się wzdłuż wyszukiwanych tras A → B.</li>
+                      <li><strong>Tryb Wędrówki na żywo (GPS):</strong> Kafelki odblokowują się automatycznie na bieżąco, gdy fizycznie wchodzisz w sektor siatki 100m.</li>
+                    </ul>
                   </div>
                 </div>
 

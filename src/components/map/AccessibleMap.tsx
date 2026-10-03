@@ -18,6 +18,7 @@ interface AccessibleMapProps {
   auditedTileIds?: string[];
   showDiscoveryGrid?: boolean;
   onTileClick?: (tileId: string) => void;
+  currentGpsCoords?: { lat: number; lng: number } | null;
 }
 
 export default function AccessibleMap({
@@ -32,6 +33,7 @@ export default function AccessibleMap({
   auditedTileIds = [],
   showDiscoveryGrid = false,
   onTileClick,
+  currentGpsCoords = null,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -56,6 +58,7 @@ export default function AccessibleMap({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const discoveryLayerRef = useRef<L.LayerGroup | null>(null);
+  const userGpsLayerRef = useRef<L.LayerGroup | null>(null);
   const prevRouteKeyRef = useRef<string>('');
 
   // 1. Initialize Map ONCE
@@ -89,6 +92,7 @@ export default function AccessibleMap({
     routeLayerRef.current = L.layerGroup().addTo(map);
     markersLayerRef.current = L.layerGroup().addTo(map);
     discoveryLayerRef.current = L.layerGroup().addTo(map);
+    userGpsLayerRef.current = L.layerGroup().addTo(map);
 
     map.on('click', (e: L.LeafletMouseEvent) => {
       if (onMapClickRef.current) {
@@ -346,6 +350,36 @@ export default function AccessibleMap({
       rect.addTo(discoveryLayer);
     }
   }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds]);
+
+  // 4. Update Current User GPS Location Layer
+  useEffect(() => {
+    const layer = userGpsLayerRef.current;
+    if (!layer) return;
+
+    layer.clearLayers();
+
+    if (!currentGpsCoords) return;
+
+    const userGpsIcon = L.divIcon({
+      className: 'custom-user-gps-marker',
+      html: `
+        <div style="position:relative;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">
+          <div style="position:absolute;width:24px;height:24px;background-color:#0284c7;opacity:0.4;border-radius:50%;animation:ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="width:14px;height:14px;background-color:#0284c7;border:2.5px solid white;border-radius:50%;box-shadow:0 0 8px rgba(2,132,199,0.9);z-index:2;"></div>
+        </div>
+      `,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    });
+
+    const marker = L.marker([currentGpsCoords.lat, currentGpsCoords.lng], {
+      icon: userGpsIcon,
+      zIndexOffset: 1000,
+      title: 'Twoja aktualna pozycja GPS',
+    }).bindPopup('<strong>Twoja pozycja GPS (na żywo)</strong>');
+
+    marker.addTo(layer);
+  }, [currentGpsCoords]);
 
   return (
     <div

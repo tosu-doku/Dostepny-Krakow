@@ -69,6 +69,11 @@
     - Komponent UI `DiscoveryBanner.tsx`: pasek postępu XP, odznaki, liczniki kafelków, przełącznik widoczności siatki oraz modal z regułami punktacji i zasadami prywatności.
     - Integracja z Leaflet `AccessibleMap.tsx`: interaktywne prostokąty z tooltipami, granicą obszaru eksploracji i obsługą zdarzeń.
     - Automatyczne odblokowywanie kafelków przy wyznaczaniu trasy oraz przy wysyłaniu formularza dodawania bariery ze zdjęciem.
+  - **Przełącznik „Lokalizacja na żywo” (Live Location GPS Exploration):**
+    - Umieszczony w menu profilu użytkownika bezpośrednio nad narzędziem Bad Actor Purge (oraz na pasku nagłówka dla gości).
+    - Rozróżnienie dwóch trybów:
+      - **Tryb Planera (Domyślny, toggle OFF):** Kafelki odkrywają się po wyznaczeniu trasy A → B w planerze.
+      - **Tryb Wędrówki na żywo (Toggle ON):** Kafelki **nie są** odkrywane sztucznie w planerze – użytkownik musi włączyć GPS i fizycznie przebywać dany sektor ~100m. Aplikacja periodycznie sprawdza pozycję (`watchPosition` + interwał) i w czasie rzeczywistym odblokowuje nowy kafelek (+10 XP) z animowanym powiadomieniem oraz pulsującym znacznikiem pozycji na mapie.
 
 
 

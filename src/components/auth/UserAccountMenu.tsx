@@ -4,18 +4,22 @@ import { useState, useEffect } from 'react';
 import { User, BadActorPurgeResult } from '@/types/user';
 import AuthModal from './AuthModal';
 import BadActorPurgeModal from '../admin/BadActorPurgeModal';
-import { User as UserIcon, LogOut, ShieldAlert, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { User as UserIcon, LogOut, ShieldAlert, ChevronDown, CheckCircle2, Navigation } from 'lucide-react';
 
 interface UserAccountMenuProps {
   onPurgeComplete?: (result: BadActorPurgeResult) => void;
   currentUser?: User | null;
   onUserChange?: (user: User | null) => void;
+  liveLocationEnabled?: boolean;
+  onToggleLiveLocation?: (enabled: boolean) => void;
 }
 
 export default function UserAccountMenu({
   onPurgeComplete,
   currentUser,
   onUserChange,
+  liveLocationEnabled = false,
+  onToggleLiveLocation,
 }: UserAccountMenuProps) {
   const [user, setUser] = useState<User | null>(currentUser || null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -81,6 +85,20 @@ export default function UserAccountMenu({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
+            onClick={() => onToggleLiveLocation?.(!liveLocationEnabled)}
+            title={liveLocationEnabled ? 'Lokalizacja na żywo: włączona (kliknij, aby wyłączyć)' : 'Włącz lokalizację na żywo'}
+            className={`min-h-[40px] px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors border ${
+              liveLocationEnabled
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
+            }`}
+          >
+            <Navigation className={`w-3.5 h-3.5 ${liveLocationEnabled ? 'text-emerald-600 rotate-45 animate-pulse' : 'text-zinc-500'}`} />
+            <span className="hidden md:inline">{liveLocationEnabled ? 'GPS aktywny' : 'GPS na żywo'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setIsAuthModalOpen(true)}
             className="min-h-[40px] px-3 sm:px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
           >
@@ -136,6 +154,56 @@ export default function UserAccountMenu({
                     <span>Twoje zgłoszenia:</span>
                     <strong className="font-mono text-sm">{user.contributions_count ?? 0}</strong>
                   </div>
+                </div>
+
+                {/* Live Location Exploration Mode Toggle */}
+                <div className="p-2.5 bg-zinc-50 dark:bg-zinc-800/80 rounded-xl border border-zinc-200 dark:border-zinc-700/60 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label
+                      htmlFor="user-live-location-toggle"
+                      className="flex items-center gap-1.5 text-xs font-bold text-zinc-900 dark:text-zinc-100 cursor-pointer select-none"
+                    >
+                      <Navigation
+                        className={`w-3.5 h-3.5 transition-transform ${
+                          liveLocationEnabled
+                            ? 'text-emerald-600 dark:text-emerald-400 rotate-45 animate-pulse'
+                            : 'text-zinc-400'
+                        }`}
+                      />
+                      <span>Lokalizacja na żywo</span>
+                    </label>
+
+                    {/* Accessible Switch */}
+                    <button
+                      type="button"
+                      role="switch"
+                      id="user-live-location-toggle"
+                      aria-checked={liveLocationEnabled}
+                      onClick={() => onToggleLiveLocation?.(!liveLocationEnabled)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+                        liveLocationEnabled ? 'bg-emerald-600' : 'bg-zinc-300 dark:bg-zinc-700'
+                      }`}
+                    >
+                      <span className="sr-only">Przełącz tryb lokalizacji na żywo</span>
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          liveLocationEnabled ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
+                    {liveLocationEnabled ? (
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
+                        ✓ Tryb wędrówki: kafelki odkrywają się na bieżąco, gdy w nie wchodzisz (GPS).
+                      </span>
+                    ) : (
+                      <span>
+                        Tryb planera: kafelki odkrywają się po wyznaczeniu trasy A → B.
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 <div className="pt-1 space-y-1 text-xs">

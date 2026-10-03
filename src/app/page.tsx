@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { RouteResult, NavigationProfile } from '@/types/routing';
 import { Barrier } from '@/types/barrier';
@@ -50,6 +50,17 @@ export default function Home() {
   const [userRank, setUserRank] = useState<UserRank | null>(null);
   const [showDiscoveryGrid, setShowDiscoveryGrid] = useState<boolean>(true);
 
+  // Live Location ("Lokalizacja na żywo") exploration state
+  const [liveLocationEnabled, setLiveLocationEnabled] = useState<boolean>(false);
+  const [currentGpsCoords, setCurrentGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsStatusMessage, setGpsStatusMessage] = useState<string | null>(null);
+
+  // Ref to hold current discoveredTileIds to avoid stale closures in geolocation callbacks
+  const discoveredTileIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    discoveredTileIdsRef.current = discoveredTileIds;
+  }, [discoveredTileIds]);
+
   // Fetch barriers from API
   const fetchBarriers = useCallback(async () => {
     try {
@@ -88,6 +99,147 @@ export default function Home() {
   useEffect(() => {
     fetchDiscoveryTiles();
   }, [fetchDiscoveryTiles]);
+
+  // Check and unlock tile when user physically enters it with GPS in Live Location mode
+  const checkAndUnlockLiveTile = useCallback(
+    async (lat: number, lng: number) => {
+      const tile = coordsToTile(lat, lng);
+      if (!tile) return; // Outside Krakow exploration bounding box
+
+      // Only unlock if not already discovered
+      if (discoveredTileIdsRef.current.includes(tile.tileId)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/discovery/unlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUser?.id,
+            tile_ids: [tile.tileId],
+            has_photo: false,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.newly_unlocked_tiles && data.newly_unlocked_tiles.length > 0) {
+            setGpsStatusMessage(`Odkryto kafel: ${tile.tileId} (+10 XP)!`);
+            setTimeout(() => setGpsStatusMessage(null), 4500);
+          }
+          if (data.user_rank) {
+            setUserRank(data.user_rank);
+          }
+          fetchDiscoveryTiles();
+        }
+      } catch (err) {
+        console.warn('Błąd podczas odblokowywania kafelka GPS:', err);
+      }
+    },
+    [currentUser, fetchDiscoveryTiles]
+  );
+
+  // Toggle Live Location mode
+  const handleToggleLiveLocation = useCallback(
+    (enabled: boolean) => {
+      if (enabled) {
+        if (!('geolocation' in navigator)) {
+          alert('Geolokalizacja nie jest wspierana w Twojej przeglądarce.');
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setLiveLocationEnabled(true);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('krakow_live_location_mode', 'true');
+            }
+            const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            setCurrentGpsCoords(coords);
+            checkAndUnlockLiveTile(coords.lat, coords.lng);
+          },
+          (err) => {
+            console.warn('Geolocation permission error:', err);
+            setLiveLocationEnabled(false);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('krakow_live_location_mode', 'false');
+            }
+            alert(
+              'Aby włączyć tryb „Lokalizacja na żywo”, musisz zezwolić przeglądarce na dostęp do lokalizacji GPS.'
+            );
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        setLiveLocationEnabled(false);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('krakow_live_location_mode', 'false');
+        }
+        setCurrentGpsCoords(null);
+        setGpsStatusMessage(null);
+      }
+    },
+    [checkAndUnlockLiveTile]
+  );
+
+  // Restore saved live location preference on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('krakow_live_location_mode');
+      if (saved === 'true') {
+        handleToggleLiveLocation(true);
+      }
+    }
+  }, [handleToggleLiveLocation]);
+
+  // Periodic GPS watching when liveLocationEnabled is true
+  useEffect(() => {
+    if (!liveLocationEnabled || !('geolocation' in navigator)) return;
+
+    let lastCheckTime = 0;
+    const THROTTLE_MS = 4000;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setCurrentGpsCoords({ lat, lng });
+
+        const now = Date.now();
+        if (now - lastCheckTime > THROTTLE_MS) {
+          lastCheckTime = now;
+          checkAndUnlockLiveTile(lat, lng);
+        }
+      },
+      (err) => {
+        console.warn('GPS watch error:', err);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 4000,
+        timeout: 10000,
+      }
+    );
+
+    // Fallback interval check every 15s
+    const intervalId = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setCurrentGpsCoords({ lat, lng });
+          checkAndUnlockLiveTile(lat, lng);
+        },
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }, 15000);
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      clearInterval(intervalId);
+    };
+  }, [liveLocationEnabled, checkAndUnlockLiveTile]);
 
   // Gamification: Unlock barrier tile with photo bonus (+100 XP / Golden tile)
   const handleBarrierCreatedDiscovery = async (lat: number, lng: number, hasPhoto: boolean) => {
@@ -155,8 +307,9 @@ export default function Home() {
       const data: RouteResult = await res.json();
       setRoute(data);
 
-      // Gamification: Unlock tiles intersected by this route (+10 XP per tile)
-      if (data.geometry?.coordinates && data.geometry.coordinates.length > 0) {
+      // Gamification: Unlock tiles intersected by this route (+10 XP per tile) ONLY if liveLocationEnabled is FALSE!
+      // In Live Location mode, tiles are ONLY unlocked by physical GPS traversal!
+      if (!liveLocationEnabled && data.geometry?.coordinates && data.geometry.coordinates.length > 0) {
         const routeTiles = routeToTiles(data.geometry.coordinates);
         if (routeTiles.length > 0) {
           try {
@@ -218,7 +371,7 @@ export default function Home() {
     }
   }, [activeTab, pickingTarget]);
 
-  // Handle Geolocation
+  // Handle Geolocation button in AddBarrierForm
   const handleUseCurrentLocation = () => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -276,6 +429,8 @@ export default function Home() {
               currentUser={currentUser}
               onUserChange={setCurrentUser}
               onPurgeComplete={handlePurgeComplete}
+              liveLocationEnabled={liveLocationEnabled}
+              onToggleLiveLocation={handleToggleLiveLocation}
             />
           </div>
         </div>
@@ -301,6 +456,8 @@ export default function Home() {
           onToggleDiscoveryGrid={() => setShowDiscoveryGrid((prev) => !prev)}
           unlockedTilesCount={discoveredTileIds.length}
           auditedPhotosCount={auditedTileIds.length}
+          liveLocationEnabled={liveLocationEnabled}
+          gpsStatusMessage={gpsStatusMessage}
         />
 
         {/* Tab Navigation (Main Mode) */}
@@ -478,6 +635,7 @@ export default function Home() {
                 discoveredTileIds={discoveredTileIds}
                 auditedTileIds={auditedTileIds}
                 showDiscoveryGrid={showDiscoveryGrid}
+                currentGpsCoords={currentGpsCoords}
               />
             </div>
 
