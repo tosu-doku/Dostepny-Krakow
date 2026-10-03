@@ -271,12 +271,10 @@ export async function calculateAccessibleRoute(
   profile: NavigationProfile = 'wheelchair'
 ): Promise<RouteResult> {
   let routeGeojson: any = null;
-  let isFromOrs = false;
 
   if (ORS_API_KEY) {
     try {
       routeGeojson = await fetchOrsRoute(start.lng, start.lat, end.lng, end.lat, profile);
-      isFromOrs = true;
     } catch (orsError) {
       console.warn('ORS routing failed, falling back to OSM foot routing:', orsError);
     }

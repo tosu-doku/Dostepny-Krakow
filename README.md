@@ -194,6 +194,22 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
    ```
    Aplikacja dostępna pod adresem: `http://localhost:3000`.
 
+6. Uruchom testy jednostkowe i linter:
+   ```bash
+   # Uruchomienie pełnego zestawu testów (Vitest):
+   npm test
+
+   # Uruchomienie lintera:
+   npm run lint
+
+   # Weryfikacja produkcyjna:
+   npm run build
+   ```
+
+7. **Pipeline CI/CD (GitHub Actions):**
+   * Projekt posiada skonfigurowany workflow `.github/workflows/ci.yml`.
+   * Przy każdym commicie i pull requeście automatycznie weryfikowana jest czystość kodu (ESLint), poprawność wszystkich 22 testów jednostkowych oraz stabilność produkcyjnego buildu Next.js.
+
 ---
 
 ## ♿ 10. Dostępność Cyfrowa (WCAG 2.2 AA)

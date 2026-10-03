@@ -88,3 +88,14 @@
     - Zamknięto w spójnym module niskopoziomową obsługę Geolocation API (`watchPosition`, polling fallback 15s, throttling `4000ms`, synchronizację z `localStorage` oraz animowane komunikaty o odblokowaniu kafelka w czasie rzeczywistym).
   - **Redukcja `src/app/page.tsx`:**
     - Zredukowano główny komponent z 674 linii do 349 linii (~48% mniej kodu), przekształcając go w czysty, deklaratywny kontener prezentacyjny.
+
+- [x] **Zadanie 12: Pakiet Testów Jednostkowych & GitHub Actions CI/CD**
+  - **Runner testowy:** Vitest skonfigurowany pod Next.js App Router z obsługą aliasów `@/*`.
+  - **Zestaw testów jednostkowych (22 testy):**
+    - `tests/grid.test.ts`: testy rzutowania współrzędnych $O(1)$ (`coordsToTile`), obliczania ramek (`tileToBounds`), próbkowania wektorów trasy (`routeToTiles`) oraz progresji rang i XP użytkowników (`calculateUserRank`).
+    - `tests/routing.test.ts`: testy odległości Haversine (`calculateDistanceMeters`), prędkości poruszania się dla profili wózek/pieszy/niedowidzący (`getProfileSpeedMps`) oraz kar czasowych za przeszkody architektoniczne (`calculateRealisticDurationSeconds`).
+    - `tests/barriers.test.ts`: testy parsowania formatów PostGIS (GeoJSON Point, WKT, invalid) oraz rygorystycznej normalizacji pól wymaganych przez WCAG/AGENTS.md (`source`, `confidence_score`, `last_verified_at`).
+  - **Konfiguracja ESLint:** dostosowanie reguł płaskiej konfiguracji (wyłączenie fałszywych alarmów typów zewnętrznych GeoJSON, obsługa ignorowania parametrów `^_`).
+  - **Automatyzacja CI/CD (`.github/workflows/ci.yml`):**
+    - Automatyczne uruchamianie na push i PR (`main`, `feat/*`, `refactor/*`).
+    - Sekwencja kroków: `npm ci` -> `npm run lint` -> `npm test` -> `npm run build`.

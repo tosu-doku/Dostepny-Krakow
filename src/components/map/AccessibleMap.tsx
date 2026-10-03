@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Barrier } from '@/types/barrier';
-import { KRAKOW_GRID_CONFIG, parseTileId, tileToBounds } from '@/services/grid';
+import { KRAKOW_GRID_CONFIG, tileToBounds } from '@/services/grid';
 import {
   createStartIcon,
   createEndIcon,

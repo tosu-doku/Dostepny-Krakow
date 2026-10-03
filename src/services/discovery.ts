@@ -1,7 +1,6 @@
 import { getSupabaseAdmin } from './supabase';
 import {
   KRAKOW_GRID_CONFIG,
-  coordsToTile,
   parseTileId,
   calculateUserRank,
   UserRank,

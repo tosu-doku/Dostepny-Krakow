@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { User, RegisterInput, LoginInput, BadActorPurgeResult } from '@/types/user';
-import { getSupabaseAdmin, getSupabaseClient } from './supabase';
+import { getSupabaseAdmin } from './supabase';
 
 const AUTH_COOKIE_NAME = 'kbb_session';
 const SECRET_KEY =

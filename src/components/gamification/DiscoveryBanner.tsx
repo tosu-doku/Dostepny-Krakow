@@ -17,7 +17,7 @@ interface DiscoveryBannerProps {
 
 export default function DiscoveryBanner({
   userRank,
-  cityPercentage = 0,
+  cityPercentage: _cityPercentage = 0,
   showDiscoveryGrid,
   onToggleDiscoveryGrid,
   unlockedTilesCount,

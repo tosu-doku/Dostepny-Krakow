@@ -1,8 +1,7 @@
 'use client';
 
-import { RouteResult, RouteStep } from '@/types/routing';
-import { Barrier } from '@/types/barrier';
-import { AlertTriangle, CheckCircle2, HelpCircle, ShieldAlert, Clock, Info } from 'lucide-react';
+import { RouteResult } from '@/types/routing';
+import { AlertTriangle, CheckCircle2, HelpCircle, Clock, Info } from 'lucide-react';
 import BarrierImageGallery from '@/components/common/BarrierImageGallery';
 
 interface RouteObstacleListProps {
@@ -38,7 +37,7 @@ export default function RouteObstacleList({ route, isLoading }: RouteObstacleLis
     );
   }
 
-  const { summary, steps, all_barriers } = route;
+  const { summary, steps } = route;
 
   return (
     <div className="flex flex-col gap-4" aria-live="polite">

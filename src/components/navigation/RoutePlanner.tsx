@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { NavigationProfile } from '@/types/routing';
-import { Navigation, Accessibility, Baby, Eye, Footprints, MapPin, Flag, Check } from 'lucide-react';
+import { Navigation, Accessibility, Baby, Eye, Footprints, MapPin } from 'lucide-react';
 
 interface RoutePlannerProps {
   startPoint: { lat: number; lng: number } | null;
