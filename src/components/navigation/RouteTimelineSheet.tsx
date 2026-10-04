@@ -140,11 +140,10 @@ export default function RouteTimelineSheet({
           if (isCobblestone) {
             nodeBg = 'bg-amber-600';
             nodeIcon = <span className="text-xs">🏛️</span>;
-            const sType = b.details?.surface_label || b.details?.surface || 'kostka brukowa';
-            title = b.details?.name ? `${b.details.name} (${sType})` : `Nawierzchnia: ${sType}`;
-            description = b.details?.smoothness
-              ? `Bruk kamienny (gładkość: ${b.details.smoothness}). Silne wstrząsy dla wózków.`
-              : 'Kostka brukowa – wstrząsy i opór toczenia dla wózków inwalidzkich i dziecięcych.';
+            const s = b.details?.surface || '';
+            const sType = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
+            title = b.details?.name ? `${b.details.name} (${sType})` : sType;
+            description = 'Utrudnienie i drgania dla wózków inwalidzkich oraz dziecięcych.';
           } else if (isRamp) {
             nodeBg = 'bg-emerald-600';
             nodeIcon = <CheckCircle2 className="w-3.5 h-3.5" />;

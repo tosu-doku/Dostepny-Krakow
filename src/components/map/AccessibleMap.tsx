@@ -154,25 +154,21 @@ export default function AccessibleMap({
         const p = feature.properties || {};
         const surfaceName =
           p.surface === 'sett'
-            ? 'Kostka rzędowa (sett)'
+            ? 'Kostka rzędowa'
             : p.surface === 'cobblestone'
-            ? 'Kocie łby (cobblestone)'
-            : 'Bruk kamienny';
+            ? 'Kocie łby'
+            : 'Kamień polny';
 
         layer.bindPopup(`
-          <div style="font-family: inherit; font-size: 13px; line-height: 1.4; min-width: 190px;">
-            <div style="display:inline-block; font-size:10px; font-weight:800; color:#b45309; background:#fef3c7; padding:2px 7px; border-radius:9999px; margin-bottom:4px;">
-              🏛️ Nawierzchnia z kostki brukowej
-            </div>
+          <div style="font-family: inherit; font-size: 13px; line-height: 1.4; min-width: 150px;">
             <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">
-              ${p.name || 'Odcinek brukowany'}
+              ${p.name || surfaceName}
             </div>
-            <div style="font-size: 12px; color: #475569;">
-              Typ: <strong>${surfaceName}</strong>
+            <div style="font-size: 12px; color: #b45309; font-weight: 700;">
+              🏛️ ${surfaceName}
             </div>
-            ${p.smoothness ? `<div style="font-size: 11px; color: #92400e; margin-top:2px;">Gładkość: <strong>${p.smoothness}</strong></div>` : ''}
-            <div style="margin-top: 6px; background: #fff7ed; border: 1px solid #ffedd5; border-radius: 8px; padding: 6px; font-size: 11px; color: #9a3412; font-weight: 600;">
-              ⚠️ Utrudnienie: drgania dla wózków inwalidzkich i dziecięcych
+            <div style="margin-top: 4px; font-size: 11px; color: #64748b;">
+              ⚠️ Utrudnienie dla wózków
             </div>
           </div>
         `);
@@ -293,10 +289,44 @@ export default function AccessibleMap({
     // Add Barrier Markers (warning widgets appear only on route after it has been calculated)
     const hasRoute = routeCoordinates && routeCoordinates.length > 0;
     if (hasRoute && barriers && barriers.length > 0) {
+      // Anti-clutter filter: prevent overlapping pills of same type or multiple cobblestone pills close together
+      const placedMarkers: { lat: number; lng: number; type: string }[] = [];
+
       barriers.forEach((b) => {
+        const isCobble = b.barrier_type === 'COBBLESTONE_SURFACE';
+        const minDistanceDeg = isCobble ? 0.0018 : 0.0006; // ~180m for cobblestone, ~60m for stairs/kerbs
+
+        const isTooClose = placedMarkers.some((m) => {
+          const latDiff = Math.abs(m.lat - b.latitude);
+          const lngDiff = Math.abs(m.lng - b.longitude);
+
+          // For same barrier type, ensure comfortable spacing along route
+          if (m.type === b.barrier_type && latDiff < minDistanceDeg && lngDiff < minDistanceDeg) {
+            return true;
+          }
+
+          // For any barrier type, avoid stacking directly on top of each other (< 30m)
+          if (latDiff < 0.0003 && lngDiff < 0.0003) {
+            return true;
+          }
+
+          return false;
+        });
+
+        // Also avoid rendering directly on top of Destination (B) or Start (A) marker (< 20m)
+        const overlapsEnd =
+          end && Math.abs(end.lat - b.latitude) < 0.0002 && Math.abs(end.lng - b.longitude) < 0.0002;
+        const overlapsStart =
+          start && Math.abs(start.lat - b.latitude) < 0.0002 && Math.abs(start.lng - b.longitude) < 0.0002;
+
+        if (isTooClose || overlapsEnd || overlapsStart) return;
+
+        placedMarkers.push({ lat: b.latitude, lng: b.longitude, type: b.barrier_type });
+
         const marker = L.marker([b.latitude, b.longitude], {
           icon: createBarrierIcon(b),
           title: `Bariera: ${b.barrier_type} (${b.address_description || ''})`,
+          zIndexOffset: isCobble ? 500 : 1000,
         }).bindPopup(createBarrierPopupHtml(b));
 
         marker.on('click', () => {

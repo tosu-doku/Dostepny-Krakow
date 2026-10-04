@@ -72,8 +72,9 @@ export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
     bg = '#d97706';
     text = '#ffffff';
     icon = '🏛️';
-    const sType = barrier.details?.surface || 'bruk';
-    label = barrier.details?.name ? `${barrier.details.name} (${sType})` : `Bruk (${sType})`;
+    const s = barrier.details?.surface || '';
+    const surfaceText = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
+    label = surfaceText;
   } else if (isRamp) {
     bg = '#16a34a';
     text = '#ffffff';
@@ -146,7 +147,9 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
     titleColor = '#ea580c';
     badgeBg = '#ffedd5';
   } else if (isCobblestone) {
-    titleBadge = '🏛️ Nawierzchnia z kostki brukowej';
+    const s = barrier.details?.surface || '';
+    const surfaceName = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
+    titleBadge = `🏛️ ${surfaceName}`;
     titleColor = '#b45309';
     badgeBg = '#fef3c7';
   } else if (isKerb) {
@@ -192,14 +195,13 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
       items.push(`<li><strong>Szerokość:</strong> ${barrier.details.width} m</li>`);
     }
   } else if (isCobblestone) {
-    items.push(`<li><strong>Rodzaj bruku:</strong> ${barrier.details?.surface_label || barrier.details?.surface || 'Kostka brukowa'}</li>`);
-    if (barrier.details?.smoothness) {
-      items.push(`<li><strong>Gładkość nawierzchni:</strong> ${barrier.details.smoothness}</li>`);
+    const s = barrier.details?.surface || '';
+    const surfaceName = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
+    if (barrier.details?.name) {
+      items.push(`<li><strong>Lokalizacja:</strong> ${barrier.details.name}</li>`);
     }
-    items.push(`<li><strong>Wpływ na mobilność:</strong> <span style="color:#b45309;font-weight:bold;">Silne drgania dla wózków inwalidzkich i dziecięcych</span></li>`);
-    if (barrier.details?.highway) {
-      items.push(`<li><strong>Klasa drogi:</strong> ${barrier.details.highway}</li>`);
-    }
+    items.push(`<li><strong>Nawierzchnia:</strong> ${surfaceName}</li>`);
+    items.push(`<li>⚠️ Utrudnienie i drgania dla wózków</li>`);
   } else {
     Object.entries(barrier.details || {})
       .filter(([k]) => k !== 'images' && k !== 'original_links' && k !== 'geometry')
