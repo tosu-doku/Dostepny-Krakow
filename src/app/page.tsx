@@ -354,14 +354,14 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={handleResetRoute}
-                    className="px-3 py-2 bg-gradient-to-b from-white/95 to-purple-50/95 backdrop-blur-md rounded-3xl shadow-xl shadow-purple-900/10 border-2 border-purple-200/90 text-slate-700 hover:text-purple-700 hover:border-purple-300 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 shrink-0 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-purple-600/40"
+                    className="px-3.5 py-2.5 bg-[#d90479] hover:bg-[#be185d] active:scale-95 text-white rounded-3xl shadow-xl shadow-pink-600/30 border-2 border-pink-300/80 transition-all flex flex-col items-center justify-center gap-1 shrink-0 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-pink-400"
                     title="Wróć do mapy i wybierz inną trasę"
                     aria-label="Wróć do mapy i wybierz inną trasę"
                   >
-                    <div className="w-8 h-8 rounded-2xl bg-purple-100 group-hover:bg-purple-200 text-purple-700 flex items-center justify-center transition-colors shadow-2xs">
-                      <X className="w-4.5 h-4.5 stroke-[2.5]" aria-hidden="true" />
+                    <div className="w-8 h-8 rounded-2xl bg-white/20 group-hover:bg-white/30 text-white flex items-center justify-center transition-colors shadow-2xs">
+                      <X className="w-5 h-5 stroke-[3]" aria-hidden="true" />
                     </div>
-                    <span className="text-[11px] font-black text-slate-800 group-hover:text-purple-700 leading-tight text-center">
+                    <span className="text-[11px] font-black text-white leading-tight text-center tracking-tight">
                       Inna<br />trasa
                     </span>
                   </button>
