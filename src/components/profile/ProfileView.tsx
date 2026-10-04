@@ -11,7 +11,6 @@ import {
   ShieldAlert,
   Navigation,
   Trophy,
-  CheckCircle2,
   Calendar,
   Layers,
   Sparkles,

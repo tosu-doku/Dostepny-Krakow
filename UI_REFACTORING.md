@@ -175,9 +175,10 @@ Aplikacja mobilna posiada stały, ergonomiczny pasek dolny z 5 zakładkami:
 | `src/components/navigation/TurnBanner.tsx` | **Nowy** | Górny ciemny baner manewrów turn-by-turn. |
 | `src/components/navigation/RouteStatCards.tsx` | **Nowy** | Pływające kafelki z czasem, godziną dotarcia i dystansem. |
 | `src/components/navigation/RouteTimelineSheet.tsx` | **Nowy** | Wysuwany arkusz barier z precyzyjnie wyrównaną osią pionową (`w-8 items-center`) i lektorem Web Speech API. |
-| `src/components/map/AccessibleMap.tsx` | Modyfikacja | Zielone heksagony trasy H3, ergonomiczne kontrolki zoom po prawej i filtry barier trasy. |
-| `src/components/map/mapIcons.ts` | Modyfikacja | Generator ikon Leaflet `createBarrierPillIcon` w formie zaokrąglonych etykiet. |
-| `src/app/page.tsx` | Modyfikacja | Integracja mobilnego kontenera portrait, zakładki Eksploracja, pigułki misji na mapie. |
+| `src/components/map/AccessibleMap.tsx` | Modyfikacja | Zielone heksagony trasy H3, ergonomiczne kontrolki zoom po prawej, filtry barier trasy, **nowe propsy `activeQuest` / `onSelectQuest`** i efekt renderujący magentowy znacznik misji (`questLayerRef`). |
+| `src/components/map/mapIcons.ts` | Modyfikacja | Generator ikon Leaflet `createBarrierPillIcon` oraz **nowa funkcja `createQuestMarkerIcon(xpReward)`** – pulsujący magentowy pin z ikoną aparatu i chipem XP dla znacznika misji dnia. |
+| `src/app/page.tsx` | Modyfikacja | Integracja mobilnego kontenera portrait, zakładki Eksploracja, pigułki misji, **stan `explorationModeEnabled` z hydratacją z `localStorage` (`krakow_exploration_mode`)**, global `DailyQuestModal` sterowany z markera mapy i pigułki. |
+| `src/types/gamification.ts` | **Nowy** | Centralna definicja interfejsu `DailyQuest` (wyekstrahowana z `DailyQuestModal.tsx`). Importowana przez `AccessibleMap.tsx`, `page.tsx` i `DailyQuestModal.tsx` (który re-eksportuje typ dla wstecznej kompatybilności). |
 | `src/app/globals.css` | Modyfikacja | Wyłączenie ciemnego motywu, czyste tła, style typografii Plus Jakarta Sans. |
 | `src/app/layout.tsx` | Modyfikacja | Podpięcie czcionki Google Font `Plus_Jakarta_Sans` z podzbiorem `latin-ext`. |
 
@@ -237,6 +238,15 @@ Refaktoring w pełni respektuje zasady dostępności opisane w [`AGENTS.md`](fil
   - [x] Zmieniono terminologię w całym UI z *„bariera”* na *„utrudnienie”* (*Zgłoś utrudnienie*, *Rodzaj utrudnienia*, *Dodaj utrudnienie do bazy*).
   - [x] Usunięto tekst *„Dotknij mapy lub kliknij…”* z pola lokalizacji; gdy lokalizacja/GPS jest aktywna, automatycznie wyświetlane są sformatowane współrzędne.
   - [x] Zastąpiono domyślny przycisk przeglądarki `Choose file` estetycznym, dedykowanym przyciskiem z ikoną aparatu i etykietą **„Zrób zdjęcie”**.
+- [x] **Tryb Eksploracji Krakowa (Exploration Mode) z Persystencją LocalStorage:**
+  - [x] Nowy klucz lokalnego przechowywania: **`krakow_exploration_mode`** (`'true'` / `'false'`). Stan jest hydratowany przy każdym uruchomieniu aplikacji.
+  - [x] Hydratacja stanu przy montowaniu (`useEffect` -> `localStorage.getItem`) z ochroną przed SSR (`try/catch`).
+  - [x] Zapis stanu (`handleToggleExplorationMode` via `useCallback` -> `localStorage.setItem`) w `src/app/page.tsx`.
+  - [x] **Karta trybu eksploracji w zakładce Profil** (`ProfileView.tsx`): kolorowy pasek statusu `✓ AKTYWNY` / `WYŁĄCZONY`, ikona rakiety (`Rocket`), opis, siatka 4 feature-chipów (widoczna gdy aktywny) i duży przycisk-toggle z `aria-pressed`.
+  - [x] **Warunkowa pigułka misji dnia na mapie** – widoczna wyłącznie gdy `explorationModeEnabled === true` i brak aktywnej trasy. Kliknięcie otwiera globalny `DailyQuestModal`.
+  - [x] **Magentowy znacznik misji na mapie Leaflet** – nowa funkcja `createQuestMarkerIcon(xpReward)` w `mapIcons.ts`; renderowana przez dedykowaną warstwę `questLayerRef` w `AccessibleMap.tsx`. Kliknięcie otwiera `DailyQuestModal`.
+  - [x] **Globalny `DailyQuestModal`** w `page.tsx` – wyzwalany zarówno przez marker mapy, jak i pigułkę. Akcja CTA przekierowuje do zakładki *Dodaj* z lokalizacją misji jako `pickedLocation`.
+  - [x] **Współdzielony typ `DailyQuest`** -> `src/types/gamification.ts`; `DailyQuestModal.tsx` re-eksportuje dla wstecznej kompatybilności.
 - [x] **Testy Jednostkowe & Kompilacja:**
   - [x] Vitest: **23/23** testów passing (`npm test`).
   - [x] ESLint: **0 błędów** (`npm run lint`).
