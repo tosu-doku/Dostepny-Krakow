@@ -12,16 +12,22 @@ import {
   MapPin,
   ShieldCheck,
   Flag,
+  Info,
+  Layers,
 } from 'lucide-react';
 import BarrierImageGallery from '../common/BarrierImageGallery';
 
 interface RouteTimelineSheetProps {
   route: RouteResult;
+  startName?: string;
+  endName?: string;
   onSelectBarrier?: (barrier: Barrier) => void;
 }
 
 export default function RouteTimelineSheet({
   route,
+  startName,
+  endName,
   onSelectBarrier,
 }: RouteTimelineSheetProps) {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
@@ -56,6 +62,14 @@ export default function RouteTimelineSheet({
 
   // Build timeline items from start, barriers, and destination
   const barriers = route.all_barriers || [];
+  const totalPoints = barriers.length + 2;
+
+  const pointsCountText =
+    totalPoints === 1
+      ? '1 punkt na trasie'
+      : totalPoints % 10 >= 2 && totalPoints % 10 <= 4 && (totalPoints % 100 < 10 || totalPoints % 100 >= 20)
+      ? `${totalPoints} punkty na trasie`
+      : `${totalPoints} punktów na trasie`;
 
   return (
     <div className="w-full bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-slate-100 flex flex-col gap-4">
@@ -63,14 +77,33 @@ export default function RouteTimelineSheet({
       <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto shrink-0 mb-1" />
 
       {/* Header (Attachment 2) */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wide">
-              {barriers.length + 2} punkty na trasie
+      <div className="flex flex-col gap-1.5">
+        {/* Top Badges Row */}
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wide whitespace-nowrap">
+              {pointsCountText}
             </span>
             <span
-              className={`text-xs font-black px-2.5 py-1 rounded-full border shadow-2xs ${
+              title={
+                route.profile === 'foot_walking'
+                  ? 'Profil: Pieszy'
+                  : route.profile === 'wheelchair'
+                  ? 'Profil: Wózek inwalidzki'
+                  : route.profile === 'stroller'
+                  ? 'Profil: Wózek dziecięcy'
+                  : 'Profil: Osoba niedowidząca'
+              }
+              aria-label={
+                route.profile === 'foot_walking'
+                  ? 'Profil: Pieszy'
+                  : route.profile === 'wheelchair'
+                  ? 'Profil: Wózek inwalidzki'
+                  : route.profile === 'stroller'
+                  ? 'Profil: Wózek dziecięcy'
+                  : 'Profil: Osoba niedowidząca'
+              }
+              className={`inline-flex items-center justify-center w-6 h-6 rounded-full border shadow-2xs shrink-0 text-xs ${
                 route.profile === 'foot_walking'
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   : route.profile === 'wheelchair'
@@ -80,22 +113,24 @@ export default function RouteTimelineSheet({
                   : 'bg-amber-50 text-amber-800 border-amber-300'
               }`}
             >
-              {route.profile === 'foot_walking' && '🚶 Pieszy'}
-              {route.profile === 'wheelchair' && '♿ Wózek inw.'}
-              {route.profile === 'stroller' && '👶 Dziecięcy'}
-              {route.profile === 'visually_impaired' && '👁️ Niedowidzący'}
+              {route.profile === 'foot_walking' && '🚶'}
+              {route.profile === 'wheelchair' && '♿'}
+              {route.profile === 'stroller' && '👶'}
+              {route.profile === 'visually_impaired' && '👁️'}
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mt-0.5">
-            Co czeka Cię po drodze
-          </h2>
+
+          {/* Confidence Badge (Attachment 2) */}
+          <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold shrink-0 whitespace-nowrap">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Trasa {averageConfidence}% pewna</span>
+          </div>
         </div>
 
-        {/* Confidence Badge (Attachment 2) */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold shrink-0">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Trasa {averageConfidence}% pewna</span>
-        </div>
+        {/* Full-width Title Heading (Never truncated!) */}
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+          Co czeka Cię po drodze
+        </h2>
       </div>
 
       {/* Timeline List (Attachment 2 - Perfectly Vertically Aligned Axis) */}
@@ -112,12 +147,12 @@ export default function RouteTimelineSheet({
 
           {/* Content */}
           <div className="flex-1 min-w-0 pb-6 pt-0.5">
-            <div className="text-xs font-black text-slate-500">0 m</div>
+            <div className="text-xs font-black text-slate-500">0 m • START</div>
             <div className="font-black text-base text-slate-900 leading-snug">
-              Start: {route.steps?.[0]?.instruction || 'Początek trasy'}
+              Start: {startName || 'Początek trasy'}
             </div>
             <p className="text-sm text-slate-600 mt-0.5 leading-relaxed font-medium">
-              Równy, utwardzony chodnik. Rozpoczęcie wyznaczonego odcinka.
+              {route.steps?.[0]?.instruction || 'Równy, utwardzony chodnik. Rozpoczęcie wyznaczonego odcinka.'}
             </p>
           </div>
         </div>
@@ -126,33 +161,66 @@ export default function RouteTimelineSheet({
         {barriers.map((b, idx) => {
           const isStairs = b.barrier_type === 'STAIRS';
           const isKerb = b.barrier_type === 'HIGH_KERB';
+          const isCobblestone = b.barrier_type === 'COBBLESTONE_SURFACE';
           const isRamp = b.details?.has_ramp === true || b.barrier_type === 'STEEP_INCLINE';
+          const isNearby = b.is_nearby || (typeof b.distance_from_route === 'number' && b.distance_from_route > 8);
 
           // Estimated distance along route (distributed along total distance)
           const distanceMeters = Math.round(((idx + 1) / (barriers.length + 1)) * route.total_distance_meters);
 
           let nodeBg = 'bg-amber-500';
-          let nodeIcon = <AlertTriangle className="w-3.5 h-3.5" />;
+          let nodeIcon: React.ReactNode = <AlertTriangle className="w-3.5 h-3.5" />;
           let title = b.address_description || b.barrier_type;
           let description = 'Zachowaj ostrożność na tym odcinku.';
 
-          if (isRamp) {
+          if (isCobblestone) {
+            nodeBg = 'bg-amber-600';
+            nodeIcon = <Layers className="w-3.5 h-3.5" />;
+            const s = b.details?.surface || '';
+            const sType = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
+            title = b.details?.name ? `${b.details.name} (${sType})` : sType;
+            description = 'Utrudnienie i drgania dla wózków inwalidzkich oraz dziecięcych.';
+          } else if (isRamp) {
             nodeBg = 'bg-emerald-600';
             nodeIcon = <CheckCircle2 className="w-3.5 h-3.5" />;
-            title = 'Podjazd / Rampa';
+            title = b.address_description || 'Podjazd / Rampa';
             description = 'Łagodny podjazd, ułatwiony przejazd dla wózków.';
           } else if (isKerb) {
             nodeBg = 'bg-amber-500';
             nodeIcon = <AlertTriangle className="w-3.5 h-3.5" />;
             const height = b.details?.height_cm ? `${b.details.height_cm} cm` : 'krawężnik';
             title = `Wysoki krawężnik: ${height}`;
-            description = `${b.address_description || 'Przejście dla pieszych'}. Zweryfikowane przez społeczność.`;
+            description = `${b.address_description || 'Przejście dla pieszych'}. Zweryfikowane dane miejskie.`;
           } else if (isStairs) {
-            nodeBg = 'bg-red-500';
+            const hasRamp = b.details?.has_ramp;
+            nodeBg = hasRamp ? 'bg-amber-600' : 'bg-red-500';
             nodeIcon = <AlertTriangle className="w-3.5 h-3.5" />;
-            const steps = b.details?.step_count ? `${b.details.step_count} stopni` : 'schody';
-            title = `Schody (${steps})`;
-            description = b.details?.has_ramp ? 'Dostępny podjazd obok schodów.' : 'Brak rampy – zalecana asysta.';
+            const steps = b.details?.step_count ? `${b.details.step_count} stopni` : 'schody terenowe';
+            title = b.address_description || `Schody (${steps})`;
+            const rampDesc = hasRamp ? '✓ Dostępny podjazd obok schodów.' : '✗ Brak podjazdu – nieprzejezdne dla wózka.';
+            const handrailDesc = b.details?.has_handrail ? ' Poręcz zamontowana.' : '';
+            const tactileDesc = b.details?.tactile_paving ? ' Płyty dotykowe dla niewidomych.' : '';
+            description = `${rampDesc}${handrailDesc}${tactileDesc}`;
+          }
+
+          // When obstacle is in the vicinity but not traversed directly, display in muted gray (not red/amber!)
+          if (isNearby) {
+            nodeBg = 'bg-slate-400';
+            nodeIcon = <Info className="w-3.5 h-3.5 text-white" />;
+            if (isStairs) {
+              const steps = b.details?.step_count ? `${b.details.step_count} st.` : 'schody';
+              title = b.address_description ? `${b.address_description} (obok trasy)` : `Schody (${steps}) – obok trasy`;
+              description = `Schody znajdują się w pobliżu (${b.distance_from_route || 15} m od toru, np. wejście do budynku). Wyznaczona trasa ich nie pokonuje.`;
+            } else if (isKerb) {
+              title = `${b.address_description || 'Krawężnik'} – w pobliżu trasy`;
+              description = `Krawężnik znajduje się obok trasy (${b.distance_from_route || 15} m), poza bezpośrednim torem przejścia.`;
+            } else if (isCobblestone) {
+              title = `${title} – obok trasy`;
+              description = `Nawierzchnia brukowana znajduje się w pobliżu trasy (${b.distance_from_route || 15} m obok).`;
+            } else {
+              title = `${title} – w pobliżu trasy`;
+              description = `Utrudnienie znajduje się w odległości ${b.distance_from_route || 15} m od wyznaczonego toru.`;
+            }
           }
 
           return (
@@ -175,8 +243,20 @@ export default function RouteTimelineSheet({
               {/* Content with hover highlight that NEVER affects axis alignment */}
               <div className="flex-1 min-w-0 pb-6 pt-0.5 p-2 -mt-1.5 rounded-xl group-hover:bg-slate-50 transition-colors flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-black text-slate-500">{distanceMeters} m</div>
-                  <div className="font-black text-base text-slate-900 truncate leading-snug">{title}</div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs font-black text-slate-500">
+                    <span>{distanceMeters} m</span>
+                    {isNearby && (
+                      <>
+                        <span>•</span>
+                        <span className="text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full text-[11px]">
+                          W pobliżu trasy ({b.distance_from_route || 15} m obok)
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className={`font-black text-base truncate leading-snug mt-0.5 ${isNearby ? 'text-slate-700' : 'text-slate-900'}`}>
+                    {title}
+                  </div>
                   <p className="text-sm text-slate-600 mt-0.5 line-clamp-2 leading-relaxed font-medium">
                     {description}
                   </p>
@@ -200,13 +280,13 @@ export default function RouteTimelineSheet({
           {/* Content */}
           <div className="flex-1 min-w-0 pt-0.5">
             <div className="text-xs font-black text-slate-500">
-              {Math.round(route.total_distance_meters)} m
+              {Math.round(route.total_distance_meters)} m • CEL
             </div>
             <div className="font-black text-base text-slate-900 leading-snug">
-              Cel: {route.steps?.[route.steps.length - 1]?.instruction || 'Punkt docelowy'}
+              Cel: {endName || 'Punkt docelowy'}
             </div>
             <p className="text-sm text-slate-600 mt-0.5 leading-relaxed font-medium">
-              Koniec trasy bez barier.
+              Koniec trasy bez barier. Dotarcie do wyznaczonego miejsca docelowego.
             </p>
           </div>
         </div>

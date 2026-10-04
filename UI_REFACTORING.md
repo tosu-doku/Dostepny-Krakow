@@ -247,7 +247,18 @@ Refaktoring w pełni respektuje zasady dostępności opisane w [`AGENTS.md`](fil
   - [x] **Magentowy znacznik misji na mapie Leaflet** – nowa funkcja `createQuestMarkerIcon(xpReward)` w `mapIcons.ts`; renderowana przez dedykowaną warstwę `questLayerRef` w `AccessibleMap.tsx`. Kliknięcie otwiera `DailyQuestModal`.
   - [x] **Globalny `DailyQuestModal`** w `page.tsx` – wyzwalany zarówno przez marker mapy, jak i pigułkę. Akcja CTA przekierowuje do zakładki *Dodaj* z lokalizacją misji jako `pickedLocation`.
   - [x] **Współdzielony typ `DailyQuest`** -> `src/types/gamification.ts`; `DailyQuestModal.tsx` re-eksportuje dla wstecznej kompatybilności.
+- [x] **Rzeczywiste Dane Miejskie Krakowa & Nawierzchnie Brukowane (`feat/real-data-surfaces`):**
+  - [x] Zaimportowano **8 283 rzeczywistych przeszkód z OpenStreetMap** (7 058 schodków z liczbą stopni, podjazdami, poręczami i płytami dotykowymi; 1 225 ulic i placów brukowanych).
+  - [x] Wdrożono endpoint `/api/surfaces` serwujący warstwę GeoJSON bruków i placów.
+  - [x] Interaktywny przycisk włączania/wyłączania warstwy brukowanej na mapie Leaflet z WCAG targetem 44x44px.
+  - [x] Rzutowanie ortogonalne na geometrię trasy (`minDistanceToPolyline` z `distancePointToSegmentMeters`).
+  - [x] Rozróżnienie przeszkód bezpośrednich vs. pobocznych (`is_nearby: true` > 8 m od osi trasy) – wyszarzenie w odcieniu łupkowym (`bg-slate-400` / `#64748b`), brak kar czasowych i fałszywych alarmów.
+  - [x] Interaktywność osi czasu: kliknięcie przeszkody na liście przełącza na mapę, centruje na współrzędnych i otwiera dymek informacyjny.
+  - [x] Usunięcie emotek z typów powierzchni (zastąpienie ikonami wektorowymi Lucide `Layers`).
+  - [x] Przycisk **„Inna trasa”** w wyrazistej magencie `#d90479` z białą ikoną `X` bezpośrednio obok widgetu manewru na mapie.
+  - [x] Przebudowa paska wyszukiwania: hasło **„Dokąd dziś?”** o zwiększonej dostępności (kontrastowe obramowanie 2px, duży font `text-base sm:text-lg font-black`).
+  - [x] Skrócone, jednoliniowe etykiety profili na osi czasu (`🚶 Pieszy`, `♿ Wózek`, `👶 Wózek dz.`, `👁️ Wzrok`) z poprawną polską odmianą liczby punktów (`X punktów na trasie`).
+  - [x] Korekta współrzędnych startu Parku Bednarskiego na `50.042714, 19.948461`.
 - [x] **Testy Jednostkowe & Kompilacja:**
-  - [x] Vitest: **23/23** testów passing (`npm test`).
-  - [x] ESLint: **0 błędów** (`npm run lint`).
-  - [x] Next.js Build: Pomyślna kompilacja wszystkich 15 tras produkcyjnych (`npm run build`).
+  - [x] Vitest: **27/27** testów passing (`npm test`).
+  - [x] Next.js Build: Pomyślna kompilacja wszystkich **16 tras** produkcyjnych (`npm run build`).

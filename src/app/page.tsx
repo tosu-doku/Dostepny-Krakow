@@ -25,6 +25,7 @@ import {
   Compass,
   Flame,
   ChevronLeft,
+  X,
 } from 'lucide-react';
 
 // Dynamically import Leaflet Map to prevent SSR errors
@@ -45,7 +46,6 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Map state
   const [startPoint, setStartPoint] = useState<{ lat: number; lng: number } | null>({
     lat: 50.0664,
     lng: 19.9482,
@@ -54,6 +54,8 @@ export default function Home() {
     lat: 50.0614,
     lng: 19.9365,
   });
+  const [startName, setStartName] = useState<string>('Dworzec Główny (Kraków)');
+  const [endName, setEndName] = useState<string>('Rynek Główny (Sukiennice)');
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pickingTarget, setPickingTarget] = useState<'start' | 'end' | null>(null);
   const [useCustomCoords, setUseCustomCoords] = useState(false);
@@ -61,6 +63,18 @@ export default function Home() {
   // Exploration Mode — persisted in localStorage
   const [explorationModeEnabled, setExplorationModeEnabled] = useState<boolean>(false);
   const [selectedQuest, setSelectedQuest] = useState<DailyQuest | null>(null);
+  const [focusedBarrier, setFocusedBarrier] = useState<Barrier | null>(null);
+
+  const handleSelectBarrier = useCallback((barrier: Barrier) => {
+    setFocusedBarrier({ ...barrier });
+    setMobileTab('map');
+  }, []);
+
+  const handleResetRoute = useCallback(() => {
+    setRoute(null);
+    setFocusedBarrier(null);
+    setMobileTab('map');
+  }, []);
 
   // Hydrate exploration mode from localStorage on mount
   useEffect(() => {
@@ -169,12 +183,16 @@ export default function Home() {
   const handleSearchRoute = async (
     start: { lat: number; lng: number },
     end: { lat: number; lng: number },
-    profile: NavigationProfile
+    profile: NavigationProfile,
+    startLabel?: string,
+    endLabel?: string
   ) => {
     setIsLoadingRoute(true);
     setErrorMessage(null);
     setStartPoint(start);
     setEndPoint(end);
+    if (startLabel) setStartName(startLabel);
+    if (endLabel) setEndName(endLabel);
 
     try {
       const res = await fetch('/api/route', {
@@ -211,10 +229,10 @@ export default function Home() {
       fetchBarriers();
       fetchDiscoveryTiles();
       if (startPoint && endPoint) {
-        handleSearchRoute(startPoint, endPoint, route?.profile || 'foot_walking');
+        handleSearchRoute(startPoint, endPoint, route?.profile || 'foot_walking', startName, endName);
       }
     },
-    [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile]
+    [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile, startName, endName]
   );
 
   // Handle Map Click
@@ -230,14 +248,17 @@ export default function Home() {
 
         if (pickingTarget === 'start') {
           setStartPoint(coords);
+          setStartName(`Współrzędne (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
           setPickingTarget(null);
           setMobileTab('route');
         } else if (pickingTarget === 'end') {
           setEndPoint(coords);
+          setEndName(`Współrzędne (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
           setPickingTarget(null);
           setMobileTab('route');
         } else {
           setEndPoint(coords);
+          setEndName(`Współrzędne (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
         }
       }
     },
@@ -321,13 +342,33 @@ export default function Home() {
           <div className="absolute top-3 left-3 right-3 z-20 flex flex-col gap-2.5 pointer-events-none">
             {route ? (
               <>
-                {/* Top Turn-by-Turn Banner (Attachment 2) */}
-                <div className="pointer-events-auto">
-                  <TurnBanner currentStep={route.steps?.[0]} />
+                {/* Top Turn-by-Turn Banner & Reset/Change Route Button */}
+                <div className="pointer-events-auto flex items-stretch gap-2.5 w-full max-w-md mx-auto">
+                  <div className="flex-1 min-w-0">
+                    <TurnBanner
+                      currentStep={route.steps?.[0]}
+                      startName={startName}
+                      endName={endName}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetRoute}
+                    className="px-3.5 py-2.5 bg-[#d90479] hover:bg-[#be185d] active:scale-95 text-white rounded-3xl shadow-xl shadow-pink-600/30 border-2 border-pink-300/80 transition-all flex flex-col items-center justify-center gap-1 shrink-0 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-pink-400"
+                    title="Wróć do mapy i wybierz inną trasę"
+                    aria-label="Wróć do mapy i wybierz inną trasę"
+                  >
+                    <div className="w-8 h-8 rounded-2xl bg-white/20 group-hover:bg-white/30 text-white flex items-center justify-center transition-colors shadow-2xs">
+                      <X className="w-5 h-5 stroke-[3]" aria-hidden="true" />
+                    </div>
+                    <span className="text-[11px] font-black text-white leading-tight text-center tracking-tight">
+                      Inna<br />trasa
+                    </span>
+                  </button>
                 </div>
 
                 {/* Floating Stat Cards (Attachment 2) */}
-                <div className="pointer-events-auto">
+                <div className="pointer-events-auto max-w-md mx-auto w-full">
                   <RouteStatCards route={route} />
                 </div>
               </>
@@ -337,11 +378,11 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setMobileTab('route')}
-                  className="w-full min-h-[48px] px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-slate-200 text-slate-700 hover:text-slate-900 flex items-center gap-3 text-sm font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99]"
+                  className="w-full min-h-[54px] px-4 sm:px-5 rounded-full bg-white/98 backdrop-blur-md shadow-lg shadow-purple-900/10 border-2 border-purple-300 text-slate-900 hover:border-purple-500 hover:bg-purple-50/40 flex items-center gap-3.5 pointer-events-auto cursor-pointer transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-purple-600"
                 >
-                  <Search className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span className="flex-1 text-left truncate">Dokąd chcesz dotrzeć w Krakowie?</span>
-                  <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-purple-100 text-purple-800 shrink-0">
+                  <Search className="w-5 h-5 text-purple-700 shrink-0 stroke-[2.5]" aria-hidden="true" />
+                  <span className="flex-1 text-left text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">Dokąd dziś?</span>
+                  <span className="text-xs sm:text-sm font-black px-3.5 py-1.5 rounded-full bg-purple-600 text-white shadow-xs shrink-0">
                     Wyznacz trasę
                   </span>
                 </button>
@@ -378,10 +419,13 @@ export default function Home() {
             <AccessibleMap
               start={startPoint}
               end={endPoint}
+              startName={startName}
+              endName={endName}
               routeCoordinates={route?.geometry?.coordinates || []}
               barriers={route?.all_barriers || []}
               selectedLocation={mobileTab === 'crowdsource' ? pickedLocation : null}
               onMapClick={handleMapClick}
+              onSelectBarrier={setFocusedBarrier}
               discoveredTileIds={discoveredTileIds}
               auditedTileIds={auditedTileIds}
               showDiscoveryGrid={showDiscoveryGrid}
@@ -390,6 +434,7 @@ export default function Home() {
               isLiveLocationActive={liveLocationEnabled}
               activeQuest={explorationModeEnabled ? ACTIVE_QUEST : null}
               onSelectQuest={(quest) => setSelectedQuest(quest)}
+              focusedBarrier={focusedBarrier}
             />
           </div>
 
@@ -412,14 +457,14 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Magenta CTA "Apply / Zobacz trasę" if route active (Attachment 1) */}
+            {/* Magenta CTA "Zobacz punkty na trasie" if route active (Attachment 1) */}
             {route && (
               <button
                 type="button"
                 onClick={() => setMobileTab('route')}
                 className="w-full h-12 bg-[#d90479] hover:bg-[#be185d] active:scale-[0.99] text-white font-extrabold text-sm rounded-full shadow-lg shadow-pink-600/30 flex items-center justify-center gap-2 cursor-pointer pointer-events-auto transition-all"
               >
-                <span>Apply – Zobacz punkty na trasie</span>
+                <span>Zobacz punkty na trasie</span>
               </button>
             )}
           </div>
@@ -450,13 +495,22 @@ export default function Home() {
               </div>
 
               {/* Attachment 2 Bottom Sheet Component */}
-              <RouteTimelineSheet route={route} />
+              <RouteTimelineSheet
+                route={route}
+                startName={startName}
+                endName={endName}
+                onSelectBarrier={handleSelectBarrier}
+              />
             </div>
           ) : (
             /* Route Inactive: Show "Utwórz trasę" Card (Attachment 3) */
             <RouteSearchCard
               startPoint={startPoint}
               endPoint={endPoint}
+              startName={startName}
+              endName={endName}
+              onSetStartName={setStartName}
+              onSetEndName={setEndName}
               onSetStartPoint={setStartPoint}
               onSetEndPoint={setEndPoint}
               pickingTarget={pickingTarget}

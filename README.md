@@ -113,6 +113,7 @@ Aplikacja udostępnia modularne API:
 | `POST` | `/api/discovery/unlock` | Odblokowuje kafelki eksploracji, nalicza punkty XP (+10 XP za kafel, +100 XP za zdjęcie) i zwraca nową rangę. |
 | `GET` | `/api/discovery/my-tiles` | Zwraca listę odkrytych kafelków użytkownika, status zdjęć oraz stan poziomu XP. |
 | `GET` | `/api/discovery/city-stats` | Zagregowane statystyki społecznościowe (% zbadanego centrum Krakowa, liczba zaudytowanych kafelków). |
+| `GET` | `/api/surfaces` | Zwraca dane przestrzenne GeoJSON historycznych nawierzchni brukowanych, kostki rzędowej i kocich łbów w Krakowie. |
 
 ---
 
@@ -208,14 +209,14 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
 
 Projekt wyposażono w pełny pakiet testów jednostkowych oraz zautomatyzowany proces Continuous Integration:
 
-* **Runner testowy:** **Vitest** zintegrowany z Next.js App Router i TypeScript (czas wykonania całego pakietu: ~500 ms).
-* **23 testy jednostkowe:**
+* **Runner testowy:** **Vitest** zintegrowany z Next.js App Router i TypeScript (czas wykonania całego pakietu: ~250 ms).
+* **27 testów jednostkowych:**
   * `tests/grid.test.ts` – algorytm indeksowania przestrzennego Uber H3 (rozdzielczość 9), wyznaczanie wielokątów heksagonów, bijektywny roundtrip `parseTileId`, próbkowanie tras i mechanika poziomów/XP.
-  * `tests/routing.test.ts` – odległości Haversine, prędkości marszu dla profili (wózek inwalidzki, dziecięcy, pieszy), realistyczne kary czasowe za przeszkody architektoniczne.
-  * `tests/barriers.test.ts` – parsowanie geometrii PostGIS (GeoJSON Point, WKT, invalid), sanitizacja i normalizacja obiektów wg standardu WCAG/AGENTS.md.
+  * `tests/routing.test.ts` – odległości Haversine, rzutowanie punktu na odcinki trasy (`minDistanceToPolyline`), prędkości marszu dla profili (wózek inwalidzki, dziecięcy, pieszy), realistyczne kary czasowe za przeszkody architektoniczne oraz weryfikacja ignorowania przeszkód pobocznych (`is_nearby`).
+  * `tests/barriers.test.ts` – parsowanie geometrii PostGIS (GeoJSON Point, WKT, invalid), sanitizacja, deduplikacja i normalizacja obiektów wg standardu WCAG/AGENTS.md.
 * **Dostępne komendy CLI:**
   ```bash
-  npm test           # Uruchomienie pełnego pakietu 23 testów
+  npm test           # Uruchomienie pełnego pakietu 27 testów
   npm run test:watch # Tryb ciągłego testowania z hot-reloadem (TDD)
   npm run lint       # Analiza statyczna kodu ESLint
   npm run build      # Produkcyjna kompilacja i kontrola typów

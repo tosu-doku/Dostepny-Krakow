@@ -97,12 +97,28 @@ export function lineStringToWKT(coords: [number, number][]): string {
 export function deduplicateBarriers(barriers: Barrier[]): Barrier[] {
   const result: Barrier[] = [];
   for (const b of barriers) {
-    const existing = result.find(
-      (r) =>
-        r.barrier_type === b.barrier_type &&
-        Math.abs(r.latitude - b.latitude) < 0.0003 &&
-        Math.abs(r.longitude - b.longitude) < 0.0003
-    );
+    const isCobble = b.barrier_type === 'COBBLESTONE_SURFACE';
+    const threshold = isCobble ? 0.0015 : 0.0005; // ~150m for cobblestone, ~50m for stairs/kerbs
+
+    const existing = result.find((r) => {
+      if (r.barrier_type !== b.barrier_type) return false;
+
+      // For cobblestone, also deduplicate if they share the same street name
+      if (
+        isCobble &&
+        r.details?.name &&
+        b.details?.name &&
+        String(r.details.name).trim().toLowerCase() === String(b.details.name).trim().toLowerCase()
+      ) {
+        return true;
+      }
+
+      return (
+        Math.abs(r.latitude - b.latitude) < threshold &&
+        Math.abs(r.longitude - b.longitude) < threshold
+      );
+    });
+
     if (!existing) {
       result.push(b);
     } else {

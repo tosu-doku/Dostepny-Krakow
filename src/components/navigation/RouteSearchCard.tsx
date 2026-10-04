@@ -8,6 +8,10 @@ import AccessibilityFilterModal from './AccessibilityFilterModal';
 interface RouteSearchCardProps {
   startPoint: { lat: number; lng: number } | null;
   endPoint: { lat: number; lng: number } | null;
+  startName?: string;
+  endName?: string;
+  onSetStartName?: (name: string) => void;
+  onSetEndName?: (name: string) => void;
   onSetStartPoint: (coords: { lat: number; lng: number }) => void;
   onSetEndPoint: (coords: { lat: number; lng: number }) => void;
   pickingTarget: 'start' | 'end' | null;
@@ -17,7 +21,9 @@ interface RouteSearchCardProps {
   onSearchRoute: (
     start: { lat: number; lng: number },
     end: { lat: number; lng: number },
-    profile: NavigationProfile
+    profile: NavigationProfile,
+    startLabel?: string,
+    endLabel?: string
   ) => void;
   isLoading: boolean;
 }
@@ -48,7 +54,7 @@ const PRESET_ROUTES = [
     name: 'Park Bednarskiego → Plac Wolnica',
     startName: 'Park Bednarskiego',
     endName: 'Plac Wolnica',
-    start: { lat: 50.0435, lng: 19.9485 },
+    start: { lat: 50.042714, lng: 19.948461 },
     end: { lat: 50.0495, lng: 19.944 },
   },
 ];
@@ -61,6 +67,10 @@ export default function RouteSearchCard({
   pickingTarget,
   onSetPickingTarget,
   useCustomCoords,
+  startName,
+  endName,
+  onSetStartName,
+  onSetEndName,
   onToggleCustomCoords,
   onSearchRoute,
   isLoading,
@@ -70,14 +80,22 @@ export default function RouteSearchCard({
   const [selectedPresetIdx, setSelectedPresetIdx] = useState<number>(0);
 
   // Text representation for inputs
-  const [startQuery, setStartQuery] = useState('Dworzec Główny (Kraków)');
-  const [endQuery, setEndQuery] = useState('Rynek Główny (Sukiennice)');
+  const [startQuery, setStartQuery] = useState(startName || 'Dworzec Główny (Kraków)');
+  const [endQuery, setEndQuery] = useState(endName || 'Rynek Główny (Sukiennice)');
 
   // Coordinates inputs
   const [startLat, setStartLat] = useState(startPoint ? startPoint.lat.toFixed(5) : '50.06640');
   const [startLng, setStartLng] = useState(startPoint ? startPoint.lng.toFixed(5) : '19.94820');
   const [endLat, setEndLat] = useState(endPoint ? endPoint.lat.toFixed(5) : '50.06140');
   const [endLng, setEndLng] = useState(endPoint ? endPoint.lng.toFixed(5) : '19.93650');
+
+  useEffect(() => {
+    if (startName) setStartQuery(startName);
+  }, [startName]);
+
+  useEffect(() => {
+    if (endName) setEndQuery(endName);
+  }, [endName]);
 
   useEffect(() => {
     if (startPoint) {
@@ -104,6 +122,8 @@ export default function RouteSearchCard({
     const p = PRESET_ROUTES[idx];
     setStartQuery(p.startName);
     setEndQuery(p.endName);
+    if (onSetStartName) onSetStartName(p.startName);
+    if (onSetEndName) onSetEndName(p.endName);
     onSetStartPoint(p.start);
     onSetEndPoint(p.end);
     setStartLat(p.start.lat.toFixed(5));
@@ -122,7 +142,9 @@ export default function RouteSearchCard({
       return;
     }
 
-    onSearchRoute(start, end, profile);
+    if (onSetStartName) onSetStartName(startQuery);
+    if (onSetEndName) onSetEndName(endQuery);
+    onSearchRoute(start, end, profile, startQuery, endQuery);
   };
 
   return (

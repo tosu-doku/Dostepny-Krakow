@@ -28,9 +28,25 @@ export interface InclineDetails {
 }
 
 export interface BarrierDetails extends Record<string, unknown> {
-  step_count?: number;
+  step_count?: number | string;
   has_ramp?: boolean;
+  ramp_type?: string;
+  ramp_stroller?: boolean;
   handrail?: boolean;
+  has_handrail?: boolean;
+  handrail_details?: string;
+  tactile_paving?: boolean;
+  surface?: string;
+  surface_label?: string;
+  smoothness?: string;
+  highway?: string;
+  is_area?: boolean;
+  wheelchair?: string;
+  incline?: string;
+  width?: number | string;
+  lit?: boolean;
+  osm_id?: string;
+  geometry?: any;
   height_cm?: number;
   incline_percent?: number;
   out_of_order_since?: string;
@@ -58,6 +74,7 @@ export interface Barrier {
   image_url?: string | null;
   created_by?: string | null;
   distance_from_route?: number;
+  is_nearby?: boolean;
 }
 
 export interface CreateBarrierInput {

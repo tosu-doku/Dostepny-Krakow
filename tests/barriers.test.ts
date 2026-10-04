@@ -63,5 +63,36 @@ describe('Barriers & PostGIS Service', () => {
       expect(normalized.longitude).toBe(0);
       expect(normalized.last_verified_at).toBeDefined();
     });
+
+    it('correctly normalizes real OSM cobblestone surfaces with rich parameters', () => {
+      const rawRow = {
+        id: 'cobblestone-osm-1',
+        barrier_type: 'COBBLESTONE_SURFACE',
+        location: { type: 'Point', coordinates: [19.9380, 50.0620] },
+        address_description: 'Plac Świętej Marii Magdaleny (Kostka rzędowa - sett)',
+        details: {
+          surface: 'sett',
+          smoothness: 'intermediate',
+          name: 'Plac Świętej Marii Magdaleny',
+          osm_id: 'way/25128175',
+          is_area: true,
+        },
+        source: 'OSM',
+        confidence_score: 0.95,
+        status: 'VERIFIED',
+      };
+
+      const normalized = normalizeBarrierRow(rawRow);
+
+      expect(normalized.barrier_type).toBe('COBBLESTONE_SURFACE');
+      expect(normalized.latitude).toBe(50.0620);
+      expect(normalized.longitude).toBe(19.9380);
+      expect(normalized.details.surface).toBe('sett');
+      expect(normalized.details.smoothness).toBe('intermediate');
+      expect(normalized.details.is_area).toBe(true);
+      expect(normalized.source).toBe('OSM');
+      expect(normalized.status).toBe('VERIFIED');
+      expect(normalized.confidence_score).toBe(0.95);
+    });
   });
 });
