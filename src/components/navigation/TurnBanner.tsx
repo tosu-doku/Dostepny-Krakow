@@ -37,7 +37,7 @@ export default function TurnBanner({
     <div
       role="status"
       aria-live="polite"
-      className="w-full max-w-sm mx-auto bg-gradient-to-r from-purple-100/95 via-purple-50/95 to-indigo-100/95 backdrop-blur-md text-slate-900 rounded-3xl p-3.5 sm:p-4 shadow-xl shadow-purple-900/10 border-2 border-purple-200/90 flex flex-col gap-2 transition-all animate-in fade-in slide-in-from-top-2 duration-300"
+      className="w-full bg-gradient-to-r from-purple-100/95 via-purple-50/95 to-indigo-100/95 backdrop-blur-md text-slate-900 rounded-3xl p-3.5 sm:p-4 shadow-xl shadow-purple-900/10 border-2 border-purple-200/90 flex flex-col gap-2 transition-all animate-in fade-in slide-in-from-top-2 duration-300"
     >
       <div className="flex items-center gap-3.5">
         {/* Purple Icon Tile */}

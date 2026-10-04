@@ -25,6 +25,7 @@ import {
   Compass,
   Flame,
   ChevronLeft,
+  X,
 } from 'lucide-react';
 
 // Dynamically import Leaflet Map to prevent SSR errors
@@ -66,6 +67,12 @@ export default function Home() {
 
   const handleSelectBarrier = useCallback((barrier: Barrier) => {
     setFocusedBarrier({ ...barrier });
+    setMobileTab('map');
+  }, []);
+
+  const handleResetRoute = useCallback(() => {
+    setRoute(null);
+    setFocusedBarrier(null);
     setMobileTab('map');
   }, []);
 
@@ -335,17 +342,33 @@ export default function Home() {
           <div className="absolute top-3 left-3 right-3 z-20 flex flex-col gap-2.5 pointer-events-none">
             {route ? (
               <>
-                {/* Top Turn-by-Turn Banner (Attachment 2) */}
-                <div className="pointer-events-auto">
-                  <TurnBanner
-                    currentStep={route.steps?.[0]}
-                    startName={startName}
-                    endName={endName}
-                  />
+                {/* Top Turn-by-Turn Banner & Reset/Change Route Button */}
+                <div className="pointer-events-auto flex items-stretch gap-2.5 w-full max-w-md mx-auto">
+                  <div className="flex-1 min-w-0">
+                    <TurnBanner
+                      currentStep={route.steps?.[0]}
+                      startName={startName}
+                      endName={endName}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetRoute}
+                    className="px-3 py-2 bg-gradient-to-b from-white/95 to-purple-50/95 backdrop-blur-md rounded-3xl shadow-xl shadow-purple-900/10 border-2 border-purple-200/90 text-slate-700 hover:text-purple-700 hover:border-purple-300 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 shrink-0 cursor-pointer group focus:outline-none focus:ring-2 focus:ring-purple-600/40"
+                    title="Wróć do mapy i wybierz inną trasę"
+                    aria-label="Wróć do mapy i wybierz inną trasę"
+                  >
+                    <div className="w-8 h-8 rounded-2xl bg-purple-100 group-hover:bg-purple-200 text-purple-700 flex items-center justify-center transition-colors shadow-2xs">
+                      <X className="w-4.5 h-4.5 stroke-[2.5]" aria-hidden="true" />
+                    </div>
+                    <span className="text-[11px] font-black text-slate-800 group-hover:text-purple-700 leading-tight text-center">
+                      Inna<br />trasa
+                    </span>
+                  </button>
                 </div>
 
                 {/* Floating Stat Cards (Attachment 2) */}
-                <div className="pointer-events-auto">
+                <div className="pointer-events-auto max-w-md mx-auto w-full">
                   <RouteStatCards route={route} />
                 </div>
               </>
