@@ -3,8 +3,10 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Plus, Minus, LocateFixed } from 'lucide-react';
 import { Barrier } from '@/types/barrier';
-import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary } from '@/services/grid';
+import { DailyQuest } from '@/types/gamification';
+import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary, routeToTiles } from '@/services/grid';
 import {
   createStartIcon,
   createEndIcon,
@@ -12,6 +14,7 @@ import {
   createUserGpsIcon,
   createBarrierIcon,
   createBarrierPopupHtml,
+  createQuestMarkerIcon,
 } from './mapIcons';
 
 interface AccessibleMapProps {
@@ -28,6 +31,11 @@ interface AccessibleMapProps {
   onTileClick?: (tileId: string) => void;
   currentGpsCoords?: { lat: number; lng: number } | null;
   centerOnGpsTrigger?: number;
+  isLiveLocationActive?: boolean;
+  /** When set, renders a prominent magenta quest marker at the quest's coordinates */
+  activeQuest?: DailyQuest | null;
+  /** Called when the user taps the quest marker */
+  onSelectQuest?: (quest: DailyQuest) => void;
 }
 
 export default function AccessibleMap({
@@ -44,6 +52,9 @@ export default function AccessibleMap({
   onTileClick,
   currentGpsCoords = null,
   centerOnGpsTrigger = 0,
+  isLiveLocationActive = false,
+  activeQuest = null,
+  onSelectQuest,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -64,11 +75,17 @@ export default function AccessibleMap({
     onTileClickRef.current = onTileClick;
   }, [onTileClick]);
 
+  const onSelectQuestRef = useRef(onSelectQuest);
+  useEffect(() => {
+    onSelectQuestRef.current = onSelectQuest;
+  }, [onSelectQuest]);
+
   // Dedicated layer groups for clean, crash-free Leaflet updates
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const discoveryLayerRef = useRef<L.LayerGroup | null>(null);
   const userGpsLayerRef = useRef<L.LayerGroup | null>(null);
+  const questLayerRef = useRef<L.LayerGroup | null>(null);
   const prevRouteKeyRef = useRef<string>('');
 
   // 1. Initialize Map ONCE
@@ -86,7 +103,7 @@ export default function AccessibleMap({
     const map = L.map(mapContainerRef.current, {
       center: [50.0614, 19.9365],
       zoom: 14,
-      zoomControl: true,
+      zoomControl: false, // Disabled default top-left control in favor of thumb-accessible controls
       zoomAnimation: false,
       fadeAnimation: false,
       markerZoomAnimation: false,
@@ -103,6 +120,7 @@ export default function AccessibleMap({
     markersLayerRef.current = L.layerGroup().addTo(map);
     discoveryLayerRef.current = L.layerGroup().addTo(map);
     userGpsLayerRef.current = L.layerGroup().addTo(map);
+    questLayerRef.current = L.layerGroup().addTo(map);
 
     map.on('click', (e: L.LeafletMouseEvent) => {
       if (onMapClickRef.current) {
@@ -175,9 +193,9 @@ export default function AccessibleMap({
     if (routeCoordinates && routeCoordinates.length > 0) {
       const latLngs: [number, number][] = routeCoordinates.map(([lng, lat]) => [lat, lng]);
       const polyline = L.polyline(latLngs, {
-        color: '#2563eb',
+        color: '#7c3aed',
         weight: 6,
-        opacity: 0.85,
+        opacity: 0.9,
         lineCap: 'round',
         lineJoin: 'round',
       });
@@ -209,21 +227,24 @@ export default function AccessibleMap({
         .bindPopup('<strong>Wybrany punkt na mapie</strong>');
     }
 
-    // Add Barrier Markers
-    barriers.forEach((b) => {
-      const marker = L.marker([b.latitude, b.longitude], {
-        icon: createBarrierIcon(b),
-        title: `Bariera: ${b.barrier_type} (${b.address_description || ''})`,
-      }).bindPopup(createBarrierPopupHtml(b));
+    // Add Barrier Markers (warning widgets appear only on route after it has been calculated)
+    const hasRoute = routeCoordinates && routeCoordinates.length > 0;
+    if (hasRoute && barriers && barriers.length > 0) {
+      barriers.forEach((b) => {
+        const marker = L.marker([b.latitude, b.longitude], {
+          icon: createBarrierIcon(b),
+          title: `Bariera: ${b.barrier_type} (${b.address_description || ''})`,
+        }).bindPopup(createBarrierPopupHtml(b));
 
-      marker.on('click', () => {
-        if (onSelectBarrierRef.current) {
-          onSelectBarrierRef.current(b);
-        }
+        marker.on('click', () => {
+          if (onSelectBarrierRef.current) {
+            onSelectBarrierRef.current(b);
+          }
+        });
+
+        marker.addTo(markersLayer);
       });
-
-      marker.addTo(markersLayer);
-    });
+    }
 
     // Auto-fit bounds only when route coordinates key changes
     const currentRouteKey = routeCoordinates.length > 0
@@ -273,6 +294,13 @@ export default function AccessibleMap({
     const discoveredSet = new Set(discoveredTileIds);
     const allCells = getAllKrakowCells();
 
+    // Calculate cells that intersect the planned route
+    const routeHexIds = new Set(
+      routeCoordinates && routeCoordinates.length > 0
+        ? routeToTiles(routeCoordinates)
+        : []
+    );
+
     // B. Draw Undiscovered Hexagonal Tiles (Uber H3 Fog of War)
     // Discovered tiles disappear (fog is lifted, revealing the map underneath)
     for (const cellId of allCells) {
@@ -284,18 +312,21 @@ export default function AccessibleMap({
       const boundary = getCellBoundary(cellId);
       if (boundary.length === 0) continue;
 
+      // Attachment 1: When route is active and live location is on, color route hexagons light green
+      const isRouteHex = isLiveLocationActive && routeHexIds.has(cellId);
+
       const hex = L.polygon(boundary, {
-        color: '#64748b',       // Elegancka, subtelna ramka heksagonu
-        weight: 1,              // Cienka linia
-        opacity: 0.25,          // Zwiększona przezroczystość obramówki
-        fillColor: '#475569',   // Mgła wojny
-        fillOpacity: 0.22,      // Półprzezroczysta mgła odsłaniająca zarys ulic
-        interactive: false,     // Wyłącz interaktywność: brak tooltipów, brak zaznaczania, kliknięcia przechodzą do mapy
+        color: isRouteHex ? '#059669' : '#64748b',       // Zielona ramka na trasie, grafitowa poza
+        weight: isRouteHex ? 1.5 : 1,                     // Wyraźniejszy kontur dla heksagonów trasy
+        opacity: isRouteHex ? 0.85 : 0.25,
+        fillColor: isRouteHex ? '#34d399' : '#475569',   // Jasnozielony kolor heksagonu na trasie (Załącznik 1)
+        fillOpacity: isRouteHex ? 0.35 : 0.22,           // Przezroczyste wypełnienie
+        interactive: false,                               // Wyłącz interaktywność: brak tooltipów, brak zaznaczania
       });
 
       hex.addTo(discoveryLayer);
     }
-  }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds]);
+  }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds, routeCoordinates, isLiveLocationActive]);
 
   // 4. Update Current User GPS Location Layer
   useEffect(() => {
@@ -327,13 +358,61 @@ export default function AccessibleMap({
     }
   }, [centerOnGpsTrigger, currentGpsCoords]);
 
-  const handleRecenterOnGps = () => {
+  // 6. Render Daily Quest Marker (visible only when exploration mode is enabled & activeQuest is set)
+  useEffect(() => {
+    const layer = questLayerRef.current;
+    if (!layer) return;
+
+    layer.clearLayers();
+
+    if (!activeQuest?.coordinates) return;
+
+    const xpReward = activeQuest.baseXp * activeQuest.multiplier;
+    const marker = L.marker(
+      [activeQuest.coordinates.lat, activeQuest.coordinates.lng],
+      {
+        icon: createQuestMarkerIcon(xpReward),
+        zIndexOffset: 2000,
+        title: `Misja: ${activeQuest.title}`,
+      }
+    ).bindPopup(
+      `<div style="font-family:sans-serif;min-width:180px;">
+        <div style="color:#d90479;font-weight:900;font-size:13px;margin-bottom:4px;">🎯 Misja Dnia</div>
+        <div style="font-weight:bold;font-size:13px;color:#111;margin-bottom:2px;">${activeQuest.title}</div>
+        <div style="font-size:11px;color:#555;">${activeQuest.subtitle}</div>
+        <div style="margin-top:6px;background:#fff1f7;border:1px solid #fecdd3;border-radius:8px;padding:6px 8px;font-size:12px;font-weight:700;color:#d90479;">+${xpReward} XP • ${activeQuest.multiplier}x Multiplier</div>
+        <div style="margin-top:6px;font-size:11px;color:#d90479;font-weight:700;cursor:pointer;" onclick="this.closest('.leaflet-popup').dispatchEvent(new Event('questclick',{bubbles:true}))">Kliknij znacznik, aby zobaczyć szczegóły →</div>
+      </div>`
+    );
+
+    marker.on('click', () => {
+      if (onSelectQuestRef.current) {
+        onSelectQuestRef.current(activeQuest);
+      }
+    });
+
+    marker.addTo(layer);
+  }, [activeQuest]);
+
+  const handleZoomIn = () => {
+    mapInstanceRef.current?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    mapInstanceRef.current?.zoomOut();
+  };
+
+  const handleRecenter = () => {
     const map = mapInstanceRef.current;
-    if (!map || !currentGpsCoords) return;
+    if (!map) return;
     try {
-      map.setView([currentGpsCoords.lat, currentGpsCoords.lng], 16, { animate: false });
+      if (currentGpsCoords) {
+        map.setView([currentGpsCoords.lat, currentGpsCoords.lng], 16, { animate: false });
+      } else {
+        map.setView([50.0614, 19.9365], 14, { animate: false });
+      }
     } catch (err) {
-      console.warn('Recenter GPS error:', err);
+      console.warn('Recenter map error:', err);
     }
   };
 
@@ -346,18 +425,44 @@ export default function AccessibleMap({
         aria-label="Interaktywna mapa Krakowa z trasą i barierami architektonicznymi"
       />
 
-      {/* Floating GPS Recenter Button when live coordinates are available */}
-      {currentGpsCoords && (
+      {/* Floating Accessible Map Controls (Right Side - Thumb Ergonomics & WCAG 44x44px target) */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[400] flex flex-col gap-2 pointer-events-auto">
+        {/* Zoom In & Zoom Out Stack */}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 flex flex-col overflow-hidden">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            aria-label="Przybliż mapę"
+            title="Przybliż mapę (+)"
+            className="w-11 h-11 flex items-center justify-center text-slate-800 hover:text-purple-600 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer border-b border-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-600/40"
+          >
+            <Plus className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            aria-label="Oddal mapę"
+            title="Oddal mapę (-)"
+            className="w-11 h-11 flex items-center justify-center text-slate-800 hover:text-purple-600 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-600/40"
+          >
+            <Minus className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Center / Locate Button */}
         <button
           type="button"
-          onClick={handleRecenterOnGps}
-          title="Wyśrodkuj widok na mojej lokalizacji GPS"
-          className="absolute top-3 right-3 z-10 px-3 py-2 bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 rounded-xl shadow-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-transform active:scale-95 cursor-pointer flex items-center gap-2 text-xs font-bold"
+          onClick={handleRecenter}
+          aria-label={currentGpsCoords ? "Wycentruj na Twojej pozycji GPS" : "Wycentruj na Rynku Głównym w Krakowie"}
+          title={currentGpsCoords ? "Moja lokalizacja GPS" : "Centrum Krakowa (Rynek)"}
+          className="w-11 h-11 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:text-purple-600 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-600/40 relative"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
-          <span>Moja lokalizacja</span>
+          <LocateFixed className={`w-5 h-5 ${currentGpsCoords ? 'text-blue-600' : 'text-slate-700'}`} aria-hidden="true" />
+          {currentGpsCoords && (
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+          )}
         </button>
-      )}
+      </div>
     </div>
   );
 }

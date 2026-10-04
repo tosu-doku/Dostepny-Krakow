@@ -141,6 +141,15 @@ W celu aktywizacji społeczności do realnego mapowania barier architektonicznyc
      * **Auto-centrowanie mapy:** Po włączeniu trybu mapa automatycznie przełącza się na widok smartfona i płynnie centruje widok na aktualnej lokalizacji użytkownika (zoom 16).
      * **Wskaźnik GPS:** Pulsujący niebieski marker na mapie oraz pływający przycisk *„Moja lokalizacja”* umożliwiający ponowne wyśrodkowanie w dowolnej chwili.
      * **Dynamiczne powiadomienia:** W czasie rzeczywistym pojawia się powiadomienie `✨ Odkryto kafel: X (+10 XP)!`.
+* **Tryb Eksploracji Krakowa – Persystencja w LocalStorage:**
+  * Dedykowany, duży przycisk-toggle w zakładce **Profil** (`ProfileView.tsx`) aktywuje pełny tryb eksploracji misji.
+  * **Klucz LocalStorage:** `krakow_exploration_mode` (wartości: `'true'` / `'false'`). Stan jest hydratowany przy każdym uruchomieniu aplikacji – użytkownik nie musi ponownie aktywować trybu po zamknięciu przeglądarki.
+  * **Gdy tryb eksploracji jest WŁĄCZONY:**
+    * Na mapie głównej pojawia się **pigułka misji dnia** (floating pill) z nazwą aktywnego zadania, nagrodą XP i mnożnikiem. Pigułka jest widoczna wyłącznie gdy brak aktywnej trasy.
+    * Na mapie Leaflet renderowany jest **magentowy znacznik misji** (`createQuestMarkerIcon`) z ikoną aparatu i chipem `+200 XP` we współrzędnych pierwszej misji dnia (Wejście do Parku Krakowskiego, Krowodrza: `50.0685°N, 19.9238°E`). Kliknięcie markera otwiera `DailyQuestModal` z pełnymi szczegółami zadania.
+    * Aktywne funkcje trybu: *Misje dnia widoczne na mapie* 🎯, *Mnożnik 2× XP* ⚡, *Odkrywanie heksagonów* 🗺️, *Odznaki za misje* 🏆.
+  * **Gdy tryb eksploracji jest WYŁĄCZONY:** pigułka misji i marker znikają z mapy – widok zachowuje pełną przejrzystość w standardowej nawigacji.
+  * **Implementacja stanu:** zarządzany w [`src/app/page.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah 2026/src/app/page.tsx) via `useState` + `useEffect` (hydratacja) + `useCallback` (zapis). Współdzielony z `ProfileView.tsx` przez props `explorationModeEnabled` / `onToggleExplorationMode`.
 
 ---
 
@@ -216,6 +225,8 @@ Projekt wyposażono w pełny pakiet testów jednostkowych oraz zautomatyzowany p
   * Wykonuje sekwencję: instalacja czysta (`npm ci`), linter (`npm run lint`), testy jednostkowe (`npm test`) oraz build produkcyjny (`npm run build`).
 * **Scenariusze testów manualnych:**
   * Szczegółowy przewodnik po wszystkich scenariuszach funkcjonalnych (UI oraz API cURL) znajduje się w dokumencie `TESTING.md`.
+* **Refaktoring UI & Mobilny Design System:**
+  * Szczegółowy opis architektury mobilnej (Portrait-First, Light Theme), tokenów kolorystycznych i realizacji widoków z załączników znajduje się w dokumencie `UI_REFACTORING.md`.
 
 ---
 

@@ -2,7 +2,19 @@
 
 import { useState } from 'react';
 import { UserRank, KRAKOW_GRID_CONFIG } from '@/services/grid';
-import { Trophy, Compass, Camera, Eye, EyeOff, Info, X } from 'lucide-react';
+import {
+  Compass,
+  Camera,
+  Eye,
+  EyeOff,
+  Info,
+  X,
+  Sparkles,
+  Flame,
+  ChevronRight,
+  MapPin,
+} from 'lucide-react';
+import DailyQuestModal, { DailyQuest } from './DailyQuestModal';
 
 interface DiscoveryBannerProps {
   userRank: UserRank | null;
@@ -13,7 +25,45 @@ interface DiscoveryBannerProps {
   auditedPhotosCount: number;
   liveLocationEnabled?: boolean;
   gpsStatusMessage?: string | null;
+  onNavigateToCrowdsource?: (coords?: { lat: number; lng: number }) => void;
 }
+
+const DEFAULT_DAILY_QUESTS: DailyQuest[] = [
+  {
+    id: 'quest-krowodrza-stairs',
+    title: 'Wejście do Parku Krakowskiego',
+    subtitle: 'Schody i nawierzchnia (Krowodrza)',
+    location: 'Krowodrza',
+    distanceText: '18 m od Ciebie',
+    currentChecks: 2,
+    qualityStatus: 'Bardzo słabo sprawdzone',
+    qualityNote: 'To miejsce ma mało aktualnych danych. Twoje zdjęcie będzie tu bardziej wartościowe niż w popularnych lokalizacjach.',
+    progressCurrent: 1,
+    progressTotal: 2,
+    baseXp: 100,
+    multiplier: 2,
+    bonusBadge: 'Premia za rzadkie miejsce',
+    category: 'STAIRS',
+    coordinates: { lat: 50.0685, lng: 19.9238 },
+  },
+  {
+    id: 'quest-center-discovery',
+    title: 'Odkryj 5 nowych kafelków w centrum',
+    subtitle: 'Mgła wojny i miejska dostępność',
+    location: 'Stare Miasto',
+    distanceText: 'W Twojej okolicy',
+    currentChecks: 1,
+    qualityStatus: 'Średnio sprawdzone',
+    qualityNote: 'Wędruj w trybie na żywo lub zaplanuj trasę, aby odkryć nowe heksagony i podwoić zdobywane XP.',
+    progressCurrent: 3,
+    progressTotal: 5,
+    baseXp: 50,
+    multiplier: 2,
+    bonusBadge: 'Szybki bonus dzienny',
+    category: 'EXPLORATION',
+    coordinates: { lat: 50.0614, lng: 19.9365 },
+  },
+];
 
 export default function DiscoveryBanner({
   userRank,
@@ -24,8 +74,10 @@ export default function DiscoveryBanner({
   auditedPhotosCount,
   liveLocationEnabled = false,
   gpsStatusMessage = null,
+  onNavigateToCrowdsource,
 }: DiscoveryBannerProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [selectedQuest, setSelectedQuest] = useState<DailyQuest | null>(null);
 
   const title = userRank?.title || 'Nowicjusz z Plant';
   const level = userRank?.level || 1;
@@ -34,185 +86,278 @@ export default function DiscoveryBanner({
   const nextLevelXp = userRank?.xpForNextLevel || 150;
   const currentXpInLevel = userRank?.xpInLevel || 0;
 
+  const handleQuestAction = (quest: DailyQuest) => {
+    setSelectedQuest(null);
+    if (onNavigateToCrowdsource) {
+      onNavigateToCrowdsource(quest.coordinates);
+    }
+  };
+
   return (
     <>
-      <div className="bg-gradient-to-r from-blue-900/90 via-indigo-900/90 to-purple-900/90 text-white rounded-xl p-3 sm:p-3.5 shadow-md border border-indigo-700/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-        {/* Left: User Level & Rank */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-amber-200 text-amber-950 font-black flex items-center justify-center text-base shadow-sm shrink-0">
-            {level === 1 ? '🥉' : level === 2 ? '🥈' : level === 3 ? '🥇' : '🏆'}
-          </div>
+      <div className="flex flex-col gap-4">
+        {/* 1. User Level & Exploration Progress Card (Pure Light Theme, Mobile-First) */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            {/* Level Badge + Rank Info */}
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-13 h-13 rounded-2xl bg-amber-50 text-amber-900 border border-amber-300/80 font-black text-xl flex items-center justify-center shadow-xs shrink-0">
+                {level === 1 ? '🥉' : level === 2 ? '🥈' : level === 3 ? '🥇' : '🏆'}
+              </div>
 
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-extrabold tracking-tight text-sm text-zinc-100">{title}</span>
-              <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold text-[10px] border border-amber-400/30">
-                Poziom {level}
-              </span>
-              {liveLocationEnabled ? (
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 font-bold text-[10px] border border-emerald-400/50 flex items-center gap-1 animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  Wędrówka GPS (na żywo)
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-200 font-semibold text-[10px] border border-sky-400/30">
-                  Planer tras
-                </span>
-              )}
-              <span className="text-[11px] text-indigo-200 font-mono">
-                {totalXp} XP
-              </span>
-              {gpsStatusMessage && (
-                <span className="text-[10px] text-emerald-300 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 animate-bounce">
-                  ✨ {gpsStatusMessage}
-                </span>
-              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-black text-lg text-slate-900 tracking-tight truncate">
+                    {title}
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300 shadow-2xs">
+                    Poziom {level}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-600 font-bold flex-wrap">
+                  <span className="text-purple-700 font-extrabold">{totalXp} XP</span>
+                  <span>•</span>
+                  <span>{currentXpInLevel} / {nextLevelXp} XP</span>
+                </div>
+              </div>
             </div>
 
-            {/* XP Progress Bar */}
-            <div className="w-48 sm:w-56 bg-zinc-800/80 rounded-full h-1.5 overflow-hidden border border-white/10">
+            {/* GPS Mode Badge */}
+            {liveLocationEnabled ? (
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+                <span>GPS Live</span>
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs shrink-0">
+                Planer
+              </span>
+            )}
+          </div>
+
+          {/* Level XP Progress Bar */}
+          <div className="space-y-1.5">
+            <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
               <div
-                className="bg-gradient-to-r from-blue-400 to-amber-300 h-full rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <p className="text-[10px] text-zinc-300">
-              {currentXpInLevel} / {nextLevelXp} XP do następnego poziomu
-            </p>
+            <div className="flex items-center justify-between text-xs text-slate-600 font-bold">
+              <span>Postęp poziomu: {progressPercent}%</span>
+              <span>Do poziomu {level + 1}: {nextLevelXp - currentXpInLevel} XP</span>
+            </div>
+          </div>
+
+          {gpsStatusMessage && (
+            <div className="p-3 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-2xl text-sm font-semibold flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{gpsStatusMessage}</span>
+            </div>
+          )}
+
+          {/* Stats Grid: H3 Hexagons & Photos */}
+          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+            <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col gap-1">
+              <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold">
+                <Compass className="w-4 h-4 text-purple-600" />
+                <span>Odkryte heksagony</span>
+              </div>
+              <div className="text-lg font-black text-slate-900">
+                {unlockedTilesCount}{' '}
+                <span className="text-xs text-slate-600 font-bold">/ {KRAKOW_GRID_CONFIG.TOTAL_TILES}</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col gap-1">
+              <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold">
+                <Camera className="w-4 h-4 text-amber-600" />
+                <span>Zaudytowane</span>
+              </div>
+              <div className="text-lg font-black text-slate-900">
+                {auditedPhotosCount}{' '}
+                <span className="text-xs text-slate-600 font-bold">zdjęć (+100 XP)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Map Grid Toggle & Info Button */}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onToggleDiscoveryGrid}
+              className={`flex-1 py-3 px-3.5 rounded-2xl border text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                showDiscoveryGrid
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+              }`}
+            >
+              {showDiscoveryGrid ? (
+                <>
+                  <EyeOff className="w-4 h-4" />
+                  <span>Ukryj siatkę heksagonów</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="w-4 h-4 text-purple-600" />
+                  <span>Pokaż siatkę heksagonów</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsRulesModalOpen(true)}
+              aria-label="Informacje o grywalizacji"
+              title="Zasady grywalizacji"
+              className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+            >
+              <Info className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Center / Right: Counters & Controls */}
-        <div className="flex items-center gap-2.5 flex-wrap self-end sm:self-auto">
-          {/* Tiles counters */}
-          <div className="flex items-center gap-2 bg-black/25 px-2.5 py-1.5 rounded-lg border border-white/10 text-[11px]">
-            <span className="flex items-center gap-1 text-sky-200" title="Odkryte heksagony Uber H3 (Rezolucja 9)">
-              <Compass className="w-3.5 h-3.5 text-sky-400" />
-              <strong>{unlockedTilesCount}</strong> / {KRAKOW_GRID_CONFIG.TOTAL_TILES}
-            </span>
-            <span className="text-white/30">|</span>
-            <span className="flex items-center gap-1 text-amber-200" title="Złote kafelki zaudytowane ze zdjęciami">
-              <Camera className="w-3.5 h-3.5 text-amber-400" />
-              <strong>{auditedPhotosCount}</strong> zdjęć (+100 XP)
+        {/* 2. Daily Quests Section (2 Daily Quests with 2x XP Multiplier) */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm flex flex-col gap-3.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-xl bg-pink-100 text-[#d90479] flex items-center justify-center shrink-0">
+                <Flame className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight">
+                  Misje Dnia
+                </h3>
+                <span className="text-xs font-bold text-[#d90479]">
+                  Mnożnik 2x XP aktywny
+                </span>
+              </div>
+            </div>
+
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-pink-50 text-[#d90479] border border-pink-200">
+              Reset o 00:00
             </span>
           </div>
 
-          {/* Toggle Grid button */}
-          <button
-            type="button"
-            onClick={onToggleDiscoveryGrid}
-            className={`min-h-[36px] px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-              showDiscoveryGrid
-                ? 'bg-amber-400 hover:bg-amber-300 text-amber-950 font-extrabold shadow-amber-400/20'
-                : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
-            }`}
-          >
-            {showDiscoveryGrid ? (
-              <>
-                <Eye className="w-3.5 h-3.5" />
-                <span>Siatka Odkryć: WŁ</span>
-              </>
-            ) : (
-              <>
-                <EyeOff className="w-3.5 h-3.5 text-zinc-300" />
-                <span>Pokaż Siatkę</span>
-              </>
-            )}
-          </button>
+          <div className="space-y-2.5">
+            {DEFAULT_DAILY_QUESTS.map((quest) => {
+              const totalXpReward = quest.baseXp * quest.multiplier;
+              const progressPct = Math.round((quest.progressCurrent / quest.progressTotal) * 100);
 
-          {/* Info Modal Button */}
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            aria-label="Zasady grywalizacji i odkrywania mapy"
-            className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
-          >
-            <Info className="w-4 h-4" />
-          </button>
+              return (
+                <div
+                  key={quest.id}
+                  onClick={() => setSelectedQuest(quest)}
+                  className="p-4 rounded-2xl border border-slate-200 hover:border-pink-300 bg-white hover:bg-pink-50/30 transition-all cursor-pointer shadow-2xs active:scale-[0.99] group flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#d90479] mb-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>{quest.distanceText}</span>
+                      </div>
+                      <h4 className="font-black text-base text-slate-900 leading-snug group-hover:text-[#d90479] transition-colors truncate">
+                        {quest.title}
+                      </h4>
+                      <p className="text-sm text-slate-600 font-medium mt-0.5">
+                        {quest.subtitle}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-black border border-purple-200 shadow-2xs">
+                        +{totalXpReward} XP
+                      </span>
+                      <span className="text-xs font-extrabold text-[#d90479] bg-pink-50 px-2 py-0.5 rounded border border-pink-200">
+                        {quest.multiplier}x Multiplier
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Progress Line */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                      <span>Postęp zadania</span>
+                      <span>
+                        {quest.progressCurrent} / {quest.progressTotal} ({progressPct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/80">
+                      <div
+                        className="bg-[#d90479] h-full rounded-full transition-all duration-300"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs font-bold text-slate-600">
+                    <span className="text-[#92400e] bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 text-xs font-bold">
+                      {quest.qualityStatus}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[#d90479] group-hover:translate-x-0.5 transition-transform text-xs font-bold">
+                      <span>Szczegóły zadania</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Gamification Info Modal */}
-      {isModalOpen && (
+      {/* Daily Quest Modal (Matching Attachment 4) */}
+      <DailyQuestModal
+        quest={selectedQuest}
+        isOpen={!!selectedQuest}
+        onClose={() => setSelectedQuest(null)}
+        onActionClick={handleQuestAction}
+      />
+
+      {/* Gamification Rules Modal */}
+      {isRulesModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
           role="dialog"
           aria-modal="true"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsModalOpen(false);
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
         >
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Odkrywanie Krakowa & Grywalizacja
-                </h3>
-              </div>
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="text-base font-extrabold text-slate-900">
+                Jak działa eksploracja i punkty XP?
+              </h2>
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                onClick={() => setIsRulesModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+            <div className="space-y-3 text-xs text-slate-600 leading-relaxed font-medium">
               <p>
-                Obszar Krakowa (Stare Miasto, Kazimierz, Podgórze, Krowodrza, Błonia, Dębniki, Grzegórzki, Czyżyny) podzielony został na heksagonalną siatkę{' '}
-                <strong>{KRAKOW_GRID_CONFIG.TOTAL_TILES} heksagonów Uber H3 (Rezolucja 9, ~350m średnicy)</strong>.
+                <strong className="text-slate-900">Mgła Wojny (Uber H3):</strong> Cały Kraków podzielony jest na 697 regularnych komórek heksagonalnych. Nieodkryte sektory pokrywa mgła wojny.
               </p>
-
-              <div className="space-y-2 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700">
-                <p className="font-bold text-zinc-900 dark:text-zinc-100">Jak zdobywać punkty i odznaki:</p>
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                    +10
-                  </span>
-                  <div>
-                    <strong>Przejście przez kafelek (XP):</strong> Zależnie od wybranego trybu w profilu:
-                    <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-                      <li><strong>Tryb Planera (domyślny):</strong> Kafelki odblokowują się wzdłuż wyszukiwanych tras A → B.</li>
-                      <li><strong>Tryb Wędrówki na żywo (GPS):</strong> Kafelki odblokowują się automatycznie na bieżąco, gdy fizycznie wchodzisz w sektor heksagonalny.</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                    +50
-                  </span>
-                  <div>
-                    <strong>Zgłoszenie nowej bariery:</strong> Poinformowanie o schodach, wysokim krawężniku lub braku pasów fakturowych.
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-600 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                    +100
-                  </span>
-                  <div>
-                    <strong>Dodanie zdjęcia przeszkody (Złoty Kafelek):</strong> Zdjęcie to kluczowy dowód audytu! Zamienia kafelek w złoty punkt audytu dostępności.
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl text-blue-900 dark:text-blue-200 text-[11px]">
-                🛡️ <strong>Prywatność (Privacy by Design):</strong> Aplikacja nie rejestruje ani nie przechowuje Twojego śladu GPS. Zapisywany jest wyłącznie fakt zaliczenia kafelka o danym numerze.
-              </div>
+              <p>
+                <strong className="text-slate-900">Odblokowywanie (+10 XP):</strong> Każdy nowy heksagon, przez który zaplanujesz trasę lub przejdziesz z aktywnym GPS, zostaje trwale odsłonięty.
+              </p>
+              <p>
+                <strong className="text-slate-900">Audyt ze zdjęciem (+100 XP):</strong> Dodanie zweryfikowanego zdjęcia przeszkody lub podjazdu trwale oznacza heksagon złotym statusem.
+              </p>
+              <p>
+                <strong className="text-slate-900">Misje Dnia (2x XP):</strong> Codziennie czekają na Ciebie 2 zadania terenowe z podwójną nagrodą punktową.
+              </p>
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 cursor-pointer"
-              >
-                Rozumiem, ruszajmy w miasto!
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsRulesModalOpen(false)}
+              className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-full shadow-md transition-colors cursor-pointer"
+            >
+              Rozumiem, ruszam w miasto!
+            </button>
           </div>
         </div>
       )}

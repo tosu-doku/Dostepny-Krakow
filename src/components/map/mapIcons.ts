@@ -55,19 +55,71 @@ export function createUserGpsIcon(): L.DivIcon {
 }
 
 /**
+ * Creates pill-style badge icon for obstacles/features directly on the map (Attachment 1).
+ */
+export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
+  const isStairs = barrier.barrier_type === 'STAIRS';
+  const isKerb = barrier.barrier_type === 'HIGH_KERB';
+  const isRamp = barrier.details?.has_ramp === true || barrier.barrier_type === 'STEEP_INCLINE';
+
+  let bg = '#f59e0b';
+  let text = '#0f172a';
+  let icon = '⚠️';
+  let label = barrier.address_description?.slice(0, 18) || barrier.barrier_type;
+
+  if (isRamp) {
+    bg = '#16a34a';
+    text = '#ffffff';
+    icon = '✓';
+    label = 'Podjazd';
+  } else if (isKerb) {
+    bg = '#facc15';
+    text = '#0f172a';
+    icon = '⚠️';
+    const height = barrier.details?.height_cm ? `${barrier.details.height_cm} cm` : '';
+    label = `Krawężnik ${height}`.trim();
+  } else if (isStairs) {
+    bg = '#f59e0b';
+    text = '#0f172a';
+    icon = '⚠️';
+    const steps = barrier.details?.step_count ? `${barrier.details.step_count} st.` : 'Schody';
+    label = steps;
+  }
+
+  return L.divIcon({
+    className: 'custom-barrier-pill',
+    html: `
+      <div style="
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+        background-color:${bg};
+        color:${text};
+        font-size:11px;
+        font-weight:700;
+        padding:4px 10px;
+        border-radius:9999px;
+        white-space:nowrap;
+        box-shadow:0 3px 8px rgba(0,0,0,0.18);
+        border:1.5px solid rgba(255,255,255,0.9);
+        pointer-events:auto;
+        cursor:pointer;
+        transform:translate(-50%, -50%);
+      ">
+        <span style="font-size:12px;">${icon}</span>
+        <span>${label}</span>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+}
+
+/**
  * Creates custom marker icon for an architectural barrier based on its type.
  */
 export function createBarrierIcon(barrier: Barrier): L.DivIcon {
-  const isStairs = barrier.barrier_type === 'STAIRS';
-  const bgColor = isStairs ? '#b91c1c' : '#d97706';
-  const symbol = isStairs ? '🪜' : '⚠️';
-
-  return L.divIcon({
-    className: 'custom-barrier-marker',
-    html: `<div style="background-color:${bgColor};color:white;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);" title="${barrier.barrier_type}">${symbol}</div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
+  return createBarrierPillIcon(barrier);
 }
 
 /**
@@ -104,4 +156,32 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
       </div>
     </div>
   `;
+}
+
+/**
+ * Creates a vibrant magenta quest marker icon for the daily quest location on the map.
+ * Shows a pulsing ring + camera icon + "+XP" chip.
+ */
+export function createQuestMarkerIcon(xpReward: number = 200): L.DivIcon {
+  return L.divIcon({
+    className: 'custom-quest-marker',
+    html: `
+      <div style="position:relative;width:48px;height:56px;display:flex;flex-direction:column;align-items:center;">
+        <!-- Pulse ring -->
+        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:48px;height:48px;background-color:#d90479;opacity:0.25;border-radius:50%;animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
+        <!-- Main badge -->
+        <div style="position:relative;width:40px;height:40px;background-color:#d90479;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(217,4,121,0.55);z-index:2;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <!-- XP chip below badge -->
+        <div style="margin-top:2px;background-color:#d90479;color:white;font-size:9px;font-weight:900;padding:2px 6px;border-radius:9999px;white-space:nowrap;box-shadow:0 2px 6px rgba(217,4,121,0.4);border:1.5px solid white;z-index:2;">+${xpReward} XP</div>
+      </div>
+    `,
+    iconSize: [48, 56],
+    iconAnchor: [24, 48],
+    popupAnchor: [0, -52],
+  });
 }
