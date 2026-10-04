@@ -17,6 +17,8 @@ import {
   Sparkles,
   Info,
   LogIn,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -28,6 +30,8 @@ interface ProfileViewProps {
   liveLocationEnabled: boolean;
   onToggleLiveLocation: (enabled: boolean) => void;
   onPurgeComplete: (result: BadActorPurgeResult) => void;
+  showDiscoveryGrid: boolean;
+  onToggleDiscoveryGrid: () => void;
 }
 
 export default function ProfileView({
@@ -39,6 +43,8 @@ export default function ProfileView({
   liveLocationEnabled,
   onToggleLiveLocation,
   onPurgeComplete,
+  showDiscoveryGrid,
+  onToggleDiscoveryGrid,
 }: ProfileViewProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
@@ -293,6 +299,31 @@ export default function ProfileView({
               </span>
             )}
           </p>
+        </div>
+
+        {/* Toggle Hexagon Grid Button */}
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={onToggleDiscoveryGrid}
+            className={`w-full py-3 px-4 rounded-2xl border text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-xs ${
+              showDiscoveryGrid
+                ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
+                : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
+            }`}
+          >
+            {showDiscoveryGrid ? (
+              <>
+                <EyeOff className="w-4.5 h-4.5" />
+                <span>Ukryj siatkę heksagonów</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-4.5 h-4.5 text-purple-600" />
+                <span>Pokaż siatkę heksagonów</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 

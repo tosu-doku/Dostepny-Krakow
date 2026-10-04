@@ -345,19 +345,19 @@ export default function Home() {
 
           {/* Bottom Floating Actions on Map (Attachment 1) */}
           <div className="absolute bottom-4 left-3 right-3 z-20 flex flex-col gap-2.5 pointer-events-none">
-            {/* Quick action button to add barrier / claim sector (Attachment 1) */}
+            {/* Quick action button to add barrier / photo audit */}
             <div className="flex justify-end pointer-events-auto">
               <button
                 type="button"
                 onClick={() => setMobileTab('crowdsource')}
-                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-xl flex items-center gap-2.5 transition-transform active:scale-95 cursor-pointer border border-slate-700"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg shadow-purple-900/25 flex items-center gap-3 transition-transform active:scale-95 cursor-pointer border border-purple-500"
               >
-                <span className="w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0">
-                  <Camera className="w-4 h-4" />
+                <span className="w-8 h-8 rounded-full bg-white text-purple-700 flex items-center justify-center shrink-0 shadow-xs">
+                  <Camera className="w-4.5 h-4.5" />
                 </span>
                 <div className="text-left">
-                  <div className="text-xs font-extrabold leading-tight">Dodaj zdjęcie</div>
-                  <div className="text-[10px] text-slate-400 font-medium">Przejmij sektor</div>
+                  <div className="text-sm font-black leading-tight text-white">Dodaj zdjęcie</div>
+                  <div className="text-xs font-black text-purple-200">+100 XP</div>
                 </div>
               </button>
             </div>
@@ -479,6 +479,8 @@ export default function Home() {
             liveLocationEnabled={liveLocationEnabled}
             onToggleLiveLocation={handleToggleLiveLocation}
             onPurgeComplete={handlePurgeComplete}
+            showDiscoveryGrid={showDiscoveryGrid}
+            onToggleDiscoveryGrid={toggleDiscoveryGrid}
           />
         </div>
 

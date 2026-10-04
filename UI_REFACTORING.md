@@ -226,6 +226,11 @@ Refaktoring w pełni respektuje zasady dostępności opisane w [`AGENTS.md`](fil
   - [x] **Skala bazowa typografii:** Ustawiono `html { font-size: 17px; }` w `globals.css`, co powiększa całą aplikację o ~10% dla optymalnej czytelności.
   - [x] **Eliminacja mikroskopijnych fontów:** Zastąpiono `text-[9px]`, `text-[10px]`, `text-[11px]` czytelnymi klasami `text-xs font-bold`, `text-sm font-bold` oraz `text-base` w całej aplikacji.
   - [x] **Zwiększony kontrast etykiet:** Poprawiono kontrast podpisów manewrów w `TurnBanner`, odznak w `DiscoveryBanner` oraz arkuszu `RouteTimelineSheet`.
+- [x] **Refaktoring Przycisku Dodaj Zdjęcie & Przełącznika Siatki Heksagonów:**
+  - [x] Przycisk pływający *Dodaj zdjęcie*: usunięto napis *„Przejmij sektor”*, zastąpiono odznaką *„+100 XP”*.
+  - [x] Nowy styl jasnego motywu: fioletowe tło (`bg-purple-600`), biały kontener na ikonę aparatu (`bg-white text-purple-700`).
+  - [x] Zmiana etykiety przycisku siatki na *„Ukryj siatkę heksagonów”* / *„Pokaż siatkę heksagonów”* (bez dopisku H3).
+  - [x] Dodano przycisk przełączania siatki zarówno w zakładce **Eksploracja** (`DiscoveryBanner.tsx`), jak i w zakładce **Profil** (`ProfileView.tsx`).
 - [x] **Testy Jednostkowe & Kompilacja:**
   - [x] Vitest: **23/23** testów passing (`npm test`).
   - [x] ESLint: **0 błędów** (`npm run lint`).

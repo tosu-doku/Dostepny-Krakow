@@ -196,12 +196,12 @@ export default function DiscoveryBanner({
               {showDiscoveryGrid ? (
                 <>
                   <EyeOff className="w-4 h-4" />
-                  <span>Ukryj siatkę heksagonów H3</span>
+                  <span>Ukryj siatkę heksagonów</span>
                 </>
               ) : (
                 <>
                   <Eye className="w-4 h-4 text-purple-600" />
-                  <span>Pokaż siatkę heksagonów H3</span>
+                  <span>Pokaż siatkę heksagonów</span>
                 </>
               )}
             </button>
