@@ -110,25 +110,20 @@ export const THEME_COLORS = {
 
 ---
 
-### Załącznik 3: Karta „Utwórz trasę”, Domyślny Pieszy & Widget Preferencji
+### Załącznik 3: Karta „Utwórz trasę” & Modal Dostępności (Settings Button)
 * **Domyślny profil:** Domyślnym profilem wyznaczania trasy jest **Pieszy** (`foot_walking`, optymalny czas marszu miejskiego ~4.3 km/h).
-* **Dedykowany Widget Preferencji ([`src/components/navigation/ProfilePreferenceWidget.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/ProfilePreferenceWidget.tsx)):**
-  * Szybki, dotykowy wybór 4 profili z kolorystyką spójną z modalem ustawień:
-    * 🚶 **Pieszy (Domyślny):** szmaragdowa zieleń (`bg-emerald-600`),
-    * ♿ **Wózek inwalidzki:** wyrazisty błękit (`bg-blue-600`),
-    * 👶 **Wózek dziecięcy:** pastelowy róż (`bg-pink-600`),
-    * 👁️ **Osoba niedowidząca:** ciepły bursztyn (`bg-amber-500`).
-  * Dynamiczny baner informacyjny odzwierciedlający reguły aktywnego profilu wraz z przyciskiem szybkiego przejścia do suwaków filtrów.
+* **Minimalistyczny interfejs zgodny z Załącznikiem 3:**
+  * Usunięto zbędny widget przełączania profili na rzecz czystego, minimalistycznego widoku.
+  * Pełna konfiguracja profili i barier odbywa się za pomocą dedykowanego przycisku suwaków (`SlidersHorizontal`) obok pola startowego.
 * **Karta wyszukiwania trasy ([`src/components/navigation/RouteSearchCard.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/RouteSearchCard.tsx)):**
-  * Nagłówek w kolorze głębokiej śliwki/burgundu (`#4c0519`) z tekstem *„Utwórz trasę”* oraz kolorową pigułką aktywnego profilu.
+  * Nagłówek w kolorze głębokiej śliwki/burgundu (`#4c0519`) z tekstem *„Utwórz trasę”* oraz plakietką informacyjną wyświetlaną w przypadku wyboru profilu specjalnego (wózek, dziecięcy, niedowidzący).
   * Dwa wejścia w kształcie pigułek (`rounded-full`):
     * Punkt początkowy: zielony punkt wskaźnikowy, pole tekstowe, przycisk czyszczenia.
     * Punkt docelowy: fioletowy punkt wskaźnikowy, pole tekstowe.
-    * Przycisk szybkiego odwrócenia punktów start/meta (`ArrowUpDown`).
   * Przycisk suwaków (`SlidersHorizontal`) otwierający dedykowany modal preferencji dostępności.
   * Tryb manualnego wskazywania punktów na mapie chroniony checkboxem.
 * **Modal preferencji dostępności ([`src/components/navigation/AccessibilityFilterModal.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/AccessibilityFilterModal.tsx)):**
-  * Profile z odpowiadającymi im barwami zaznaczenia (niebieski dla wózka, zielony dla pieszego, różowy dla dziecięcego, bursztynowy dla niedowidzącego).
+  * Szybki wybór profilu z dedykowaną kolorystyką (wózek = niebieski, pieszy = zielony, dziecięcy = różowy, niedowidzący = bursztynowy).
   * Szczegółowe filtry:
     * Maksymalna wysokość krawężnika (suwak 2 cm – 15 cm),
     * Bezwzględne omijanie schodów bez ramp,
@@ -154,8 +149,7 @@ Aplikacja mobilna posiada stały, ergonomiczny pasek dolny z 5 zakładkami:
 | :--- | :--- | :--- |
 | `src/constants/theme.ts` | **Nowy** | Centralna definicja Design Tokens (kolory, typografia, cienie, promienie). |
 | `src/components/layout/BottomNavigation.tsx` | **Nowy** | Mobilny dolny pasek nawigacyjny z 5 zakładkami i obsługą ARIA. |
-| `src/components/navigation/ProfilePreferenceWidget.tsx` | **Nowy** | Dotykowy widget wyboru profilu (domyślny Pieszy, barwy wózek=błękit, dziecięcy=róż, niedowidzący=bursztyn). |
-| `src/components/navigation/RouteSearchCard.tsx` | **Nowy** | Karta „Utwórz trasę” z polami-pigułkami, widgetem preferencji i przyciskiem filtrów. |
+| `src/components/navigation/RouteSearchCard.tsx` | **Nowy** | Karta „Utwórz trasę” z polami-pigułkami i przyciskiem filtrów. |
 | `src/components/navigation/AccessibilityFilterModal.tsx` | **Nowy** | Modal wyboru profilu i parametrów dostępności trasy ze spójną kolorystyką. |
 | `src/components/navigation/TurnBanner.tsx` | **Nowy** | Górny ciemny baner manewrów turn-by-turn. |
 | `src/components/navigation/RouteStatCards.tsx` | **Nowy** | Pływające kafelki z czasem, godziną dotarcia i dystansem. |

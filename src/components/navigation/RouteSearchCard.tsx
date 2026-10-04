@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { NavigationProfile } from '@/types/routing';
 import { Search, SlidersHorizontal, MapPin } from 'lucide-react';
 import AccessibilityFilterModal from './AccessibilityFilterModal';
-import ProfilePreferenceWidget from './ProfilePreferenceWidget';
 
 interface RouteSearchCardProps {
   startPoint: { lat: number; lng: number } | null;
@@ -133,22 +132,21 @@ export default function RouteSearchCard({
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#4c0519]">
           Utwórz trasę
         </h1>
-        <span
-          className={`text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-2xs flex items-center gap-1.5 ${
-            profile === 'foot_walking'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-              : profile === 'wheelchair'
-              ? 'bg-blue-50 text-blue-800 border-blue-300'
-              : profile === 'stroller'
-              ? 'bg-pink-50 text-pink-800 border-pink-300'
-              : 'bg-amber-50 text-amber-800 border-amber-300'
-          }`}
-        >
-          {profile === 'foot_walking' && '🚶 Pieszy'}
-          {profile === 'wheelchair' && '♿ Wózek inw.'}
-          {profile === 'stroller' && '👶 Dziecięcy'}
-          {profile === 'visually_impaired' && '👁️ Niedowidzący'}
-        </span>
+        {profile !== 'foot_walking' && (
+          <span
+            className={`text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-2xs flex items-center gap-1.5 ${
+              profile === 'wheelchair'
+                ? 'bg-blue-50 text-blue-800 border-blue-300'
+                : profile === 'stroller'
+                ? 'bg-pink-50 text-pink-800 border-pink-300'
+                : 'bg-amber-50 text-amber-800 border-amber-300'
+            }`}
+          >
+            {profile === 'wheelchair' && '♿ Wózek inwalidzki'}
+            {profile === 'stroller' && '👶 Wózek dziecięcy'}
+            {profile === 'visually_impaired' && '👁️ Osoba niedowidząca'}
+          </span>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
@@ -174,9 +172,17 @@ export default function RouteSearchCard({
             onClick={() => setIsFilterModalOpen(true)}
             title="Ustawienia wyszukiwania i profilu dostępności"
             aria-label="Otwórz ustawienia dostępności i filtry trasy"
-            className="ml-2.5 w-12 h-12 rounded-full border border-slate-300 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-800 transition-colors shadow-xs shrink-0 cursor-pointer active:scale-95"
+            className={`ml-2.5 w-12 h-12 rounded-full border flex items-center justify-center transition-all shadow-xs shrink-0 cursor-pointer active:scale-95 ${
+              profile === 'wheelchair'
+                ? 'border-blue-400 bg-blue-50 text-blue-700'
+                : profile === 'stroller'
+                ? 'border-pink-400 bg-pink-50 text-pink-700'
+                : profile === 'visually_impaired'
+                ? 'border-amber-400 bg-amber-50 text-amber-700'
+                : 'border-slate-300 bg-white hover:bg-slate-50 text-slate-800'
+            }`}
           >
-            <SlidersHorizontal className="w-5 h-5 text-slate-700" />
+            <SlidersHorizontal className="w-5 h-5" />
           </button>
         </div>
 
@@ -192,15 +198,6 @@ export default function RouteSearchCard({
             placeholder="Wybierz końcowy punkt"
             aria-label="Wybierz końcowy punkt trasy"
             className="w-full h-13 pl-11 pr-4 bg-white border border-slate-300 rounded-full text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all shadow-xs"
-          />
-        </div>
-
-        {/* Profile & Accessibility Preferences Widget */}
-        <div className="pt-1">
-          <ProfilePreferenceWidget
-            selectedProfile={profile}
-            onSelectProfile={setProfile}
-            onOpenSettings={() => setIsFilterModalOpen(true)}
           />
         </div>
 
