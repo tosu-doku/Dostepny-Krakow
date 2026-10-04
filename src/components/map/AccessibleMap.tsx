@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Barrier } from '@/types/barrier';
-import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary } from '@/services/grid';
+import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary, routeToTiles } from '@/services/grid';
 import {
   createStartIcon,
   createEndIcon,
@@ -28,6 +28,7 @@ interface AccessibleMapProps {
   onTileClick?: (tileId: string) => void;
   currentGpsCoords?: { lat: number; lng: number } | null;
   centerOnGpsTrigger?: number;
+  isLiveLocationActive?: boolean;
 }
 
 export default function AccessibleMap({
@@ -44,6 +45,7 @@ export default function AccessibleMap({
   onTileClick,
   currentGpsCoords = null,
   centerOnGpsTrigger = 0,
+  isLiveLocationActive = false,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -175,9 +177,9 @@ export default function AccessibleMap({
     if (routeCoordinates && routeCoordinates.length > 0) {
       const latLngs: [number, number][] = routeCoordinates.map(([lng, lat]) => [lat, lng]);
       const polyline = L.polyline(latLngs, {
-        color: '#2563eb',
+        color: '#7c3aed',
         weight: 6,
-        opacity: 0.85,
+        opacity: 0.9,
         lineCap: 'round',
         lineJoin: 'round',
       });
@@ -273,6 +275,13 @@ export default function AccessibleMap({
     const discoveredSet = new Set(discoveredTileIds);
     const allCells = getAllKrakowCells();
 
+    // Calculate cells that intersect the planned route
+    const routeHexIds = new Set(
+      routeCoordinates && routeCoordinates.length > 0
+        ? routeToTiles(routeCoordinates)
+        : []
+    );
+
     // B. Draw Undiscovered Hexagonal Tiles (Uber H3 Fog of War)
     // Discovered tiles disappear (fog is lifted, revealing the map underneath)
     for (const cellId of allCells) {
@@ -284,18 +293,21 @@ export default function AccessibleMap({
       const boundary = getCellBoundary(cellId);
       if (boundary.length === 0) continue;
 
+      // Attachment 1: When route is active and live location is on, color route hexagons light green
+      const isRouteHex = isLiveLocationActive && routeHexIds.has(cellId);
+
       const hex = L.polygon(boundary, {
-        color: '#64748b',       // Elegancka, subtelna ramka heksagonu
-        weight: 1,              // Cienka linia
-        opacity: 0.25,          // Zwiększona przezroczystość obramówki
-        fillColor: '#475569',   // Mgła wojny
-        fillOpacity: 0.22,      // Półprzezroczysta mgła odsłaniająca zarys ulic
-        interactive: false,     // Wyłącz interaktywność: brak tooltipów, brak zaznaczania, kliknięcia przechodzą do mapy
+        color: isRouteHex ? '#059669' : '#64748b',       // Zielona ramka na trasie, grafitowa poza
+        weight: isRouteHex ? 1.5 : 1,                     // Wyraźniejszy kontur dla heksagonów trasy
+        opacity: isRouteHex ? 0.85 : 0.25,
+        fillColor: isRouteHex ? '#34d399' : '#475569',   // Jasnozielony kolor heksagonu na trasie (Załącznik 1)
+        fillOpacity: isRouteHex ? 0.35 : 0.22,           // Przezroczyste wypełnienie
+        interactive: false,                               // Wyłącz interaktywność: brak tooltipów, brak zaznaczania
       });
 
       hex.addTo(discoveryLayer);
     }
-  }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds]);
+  }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds, routeCoordinates, isLiveLocationActive]);
 
   // 4. Update Current User GPS Location Layer
   useEffect(() => {

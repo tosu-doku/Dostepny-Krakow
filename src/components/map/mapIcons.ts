@@ -55,19 +55,71 @@ export function createUserGpsIcon(): L.DivIcon {
 }
 
 /**
+ * Creates pill-style badge icon for obstacles/features directly on the map (Attachment 1).
+ */
+export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
+  const isStairs = barrier.barrier_type === 'STAIRS';
+  const isKerb = barrier.barrier_type === 'HIGH_KERB';
+  const isRamp = barrier.details?.has_ramp === true || barrier.barrier_type === 'STEEP_INCLINE';
+
+  let bg = '#f59e0b';
+  let text = '#0f172a';
+  let icon = '⚠️';
+  let label = barrier.address_description?.slice(0, 18) || barrier.barrier_type;
+
+  if (isRamp) {
+    bg = '#16a34a';
+    text = '#ffffff';
+    icon = '✓';
+    label = 'Podjazd';
+  } else if (isKerb) {
+    bg = '#facc15';
+    text = '#0f172a';
+    icon = '⚠️';
+    const height = barrier.details?.height_cm ? `${barrier.details.height_cm} cm` : '';
+    label = `Krawężnik ${height}`.trim();
+  } else if (isStairs) {
+    bg = '#f59e0b';
+    text = '#0f172a';
+    icon = '⚠️';
+    const steps = barrier.details?.step_count ? `${barrier.details.step_count} st.` : 'Schody';
+    label = steps;
+  }
+
+  return L.divIcon({
+    className: 'custom-barrier-pill',
+    html: `
+      <div style="
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+        background-color:${bg};
+        color:${text};
+        font-size:11px;
+        font-weight:700;
+        padding:4px 10px;
+        border-radius:9999px;
+        white-space:nowrap;
+        box-shadow:0 3px 8px rgba(0,0,0,0.18);
+        border:1.5px solid rgba(255,255,255,0.9);
+        pointer-events:auto;
+        cursor:pointer;
+        transform:translate(-50%, -50%);
+      ">
+        <span style="font-size:12px;">${icon}</span>
+        <span>${label}</span>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  });
+}
+
+/**
  * Creates custom marker icon for an architectural barrier based on its type.
  */
 export function createBarrierIcon(barrier: Barrier): L.DivIcon {
-  const isStairs = barrier.barrier_type === 'STAIRS';
-  const bgColor = isStairs ? '#b91c1c' : '#d97706';
-  const symbol = isStairs ? '🪜' : '⚠️';
-
-  return L.divIcon({
-    className: 'custom-barrier-marker',
-    html: `<div style="background-color:${bgColor};color:white;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);" title="${barrier.barrier_type}">${symbol}</div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
+  return createBarrierPillIcon(barrier);
 }
 
 /**

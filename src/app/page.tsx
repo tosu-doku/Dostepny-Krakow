@@ -1,39 +1,40 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { RouteResult, NavigationProfile } from '@/types/routing';
 import { Barrier } from '@/types/barrier';
 import { User, BadActorPurgeResult } from '@/types/user';
-import RoutePlanner from '@/components/navigation/RoutePlanner';
-import RouteObstacleList from '@/components/navigation/RouteObstacleList';
+import RouteSearchCard from '@/components/navigation/RouteSearchCard';
+import TurnBanner from '@/components/navigation/TurnBanner';
+import RouteStatCards from '@/components/navigation/RouteStatCards';
+import RouteTimelineSheet from '@/components/navigation/RouteTimelineSheet';
+import BottomNavigation, { ActiveMobileTab } from '@/components/layout/BottomNavigation';
 import AddBarrierForm from '@/components/crowdsourcing/AddBarrierForm';
 import UserAccountMenu from '@/components/auth/UserAccountMenu';
 import DiscoveryBanner from '@/components/gamification/DiscoveryBanner';
 import { useDiscovery } from '@/hooks/useDiscovery';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
 import {
-  ShieldCheck,
-  Map as MapIcon,
-  PlusCircle,
+  Search,
+  Camera,
   AlertCircle,
-  Compass,
-  ListFilter,
+  Trophy,
+  ChevronLeft,
 } from 'lucide-react';
 
 // Dynamically import Leaflet Map to prevent SSR errors
 const AccessibleMap = dynamic(() => import('@/components/map/AccessibleMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[380px] bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-zinc-500 text-sm">
+    <div className="w-full h-full min-h-[380px] bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-semibold">
       Ładowanie mapy Krakowa...
     </div>
   ),
 });
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'navigation' | 'crowdsource'>('navigation');
-  const [mobileView, setMobileView] = useState<'panel' | 'map'>('panel');
+  const [mobileTab, setMobileTab] = useState<ActiveMobileTab>('map');
   const [route, setRoute] = useState<RouteResult | null>(null);
   const [allBarriers, setAllBarriers] = useState<Barrier[]>([]);
   const [isLoadingRoute, setIsLoadingRoute] = useState<boolean>(false);
@@ -78,7 +79,7 @@ export default function Home() {
     currentUser,
     discoveredTileIdsRef,
     onTileUnlocked: fetchDiscoveryTiles,
-    onModeActivated: () => setMobileView('map'),
+    onModeActivated: () => setMobileTab('map'),
   });
 
   // Fetch barriers from API
@@ -129,8 +130,8 @@ export default function Home() {
         await unlockRouteTiles(data.geometry.coordinates);
       }
 
-      setActiveTab('navigation');
-      setMobileView('map');
+      // Switch to map view to display turn-by-turn navigation
+      setMobileTab('map');
     } catch (err: any) {
       setErrorMessage(err.message || 'Wystąpił nieoczekiwany błąd');
     } finally {
@@ -153,32 +154,28 @@ export default function Home() {
   // Handle Map Click
   const handleMapClick = useCallback(
     (coords: { lat: number; lng: number }) => {
-      if (activeTab === 'navigation') {
-        // Prevent selecting start or end point unless "wskaż własne punkty" is checked
-        if (!useCustomCoords) {
-          return;
-        }
+      if (mobileTab === 'crowdsource') {
+        setPickedLocation(coords);
+        return;
+      }
+
+      if (mobileTab === 'map' || mobileTab === 'route') {
+        if (!useCustomCoords) return;
 
         if (pickingTarget === 'start') {
           setStartPoint(coords);
           setPickingTarget(null);
-          setMobileView('panel');
+          setMobileTab('route');
         } else if (pickingTarget === 'end') {
           setEndPoint(coords);
           setPickingTarget(null);
-          setMobileView('panel');
+          setMobileTab('route');
         } else {
           setEndPoint(coords);
         }
-        return;
-      }
-
-      if (activeTab === 'crowdsource') {
-        setPickedLocation(coords);
-        setMobileView('panel');
       }
     },
-    [activeTab, useCustomCoords, pickingTarget]
+    [mobileTab, useCustomCoords, pickingTarget]
   );
 
   // Handle Geolocation button in AddBarrierForm
@@ -193,37 +190,32 @@ export default function Home() {
   const handleSetPickingTarget = (target: 'start' | 'end' | null) => {
     setPickingTarget(target);
     if (target) {
-      setMobileView('map');
+      setMobileTab('map');
     }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col antialiased">
-      {/* Header - Mobile friendly */}
-      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 py-3 px-3 sm:px-6 shadow-xs sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg sm:text-xl shadow-xs shrink-0">
+    <div className="min-h-screen bg-slate-100 flex justify-center text-slate-900 antialiased select-none font-sans">
+      {/* Mobile Portrait Frame: max-w-md on desktop, 100% on phone */}
+      <div className="w-full max-w-md min-h-screen bg-white relative flex flex-col shadow-2xl border-x border-slate-200/60 pb-20">
+        
+        {/* Subtle Top Status Bar */}
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
               ♿
             </div>
             <div>
-              <h1 className="text-base sm:lg font-extrabold tracking-tight leading-tight">
+              <span className="text-sm font-black tracking-tight text-slate-900 block leading-tight">
                 Kraków bez barier
-              </h1>
-              <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[280px] sm:max-w-none">
-                Inteligentna nawigacja miejska & crowdsourcing dostępności
-              </p>
+              </span>
+              <span className="text-[10px] font-bold text-emerald-600 block leading-none">
+                WCAG 2.2 AA • PostGIS
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] sm:text-xs font-semibold self-start sm:self-auto">
-            <span className="hidden md:flex px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" aria-hidden="true" />
-              WCAG 2.2 AA
-            </span>
-            <span className="hidden sm:inline px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
-              PostGIS
-            </span>
+          <div className="flex items-center gap-1.5">
             <UserAccountMenu
               currentUser={currentUser}
               onUserChange={setCurrentUser}
@@ -232,245 +224,258 @@ export default function Home() {
               onToggleLiveLocation={handleToggleLiveLocation}
             />
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto w-full p-3 sm:p-6 flex-1 flex flex-col gap-4 sm:gap-6">
-        {/* Error Announcement */}
+        {/* Error Notification */}
         {errorMessage && (
           <div
             role="alert"
-            className="p-3 bg-red-50 border border-red-200 text-red-900 rounded-lg text-xs sm:text-sm flex items-center gap-2"
+            className="m-3 p-3 bg-red-50 border border-red-200 text-red-900 rounded-2xl text-xs flex items-center gap-2 animate-in fade-in"
           >
             <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{errorMessage}</span>
+            <span className="flex-1 font-medium">{errorMessage}</span>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="text-red-600 font-bold text-xs"
+            >
+              ✕
+            </button>
           </div>
         )}
 
-        {/* Discovery Gamification / Fog of War Banner */}
-        <DiscoveryBanner
-          userRank={userRank}
-          showDiscoveryGrid={showDiscoveryGrid}
-          onToggleDiscoveryGrid={toggleDiscoveryGrid}
-          unlockedTilesCount={discoveredTileIds.length}
-          auditedPhotosCount={auditedTileIds.length}
-          liveLocationEnabled={liveLocationEnabled}
-          gpsStatusMessage={gpsStatusMessage}
-        />
-
-        {/* Tab Navigation (Main Mode) */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-3">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('navigation');
-                setPickingTarget(null);
-              }}
-              className={`flex-1 sm:flex-none min-h-[44px] px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'navigation'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800'
-              }`}
-            >
-              <Compass className="w-4 h-4" aria-hidden="true" />
-              Nawigacja i Trasa
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('crowdsource');
-                setPickingTarget(null);
-              }}
-              className={`flex-1 sm:flex-none min-h-[44px] px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                activeTab === 'crowdsource'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800'
-              }`}
-            >
-              <PlusCircle className="w-4 h-4" aria-hidden="true" />
-              Zgłoś Barierę
-            </button>
-          </div>
-
-          {/* Mobile Screen Segmented Switcher (Visible only on < lg) */}
-          <div className="flex lg:hidden bg-zinc-200 dark:bg-zinc-800 p-1 rounded-lg">
-            <button
-              type="button"
-              onClick={() => setMobileView('panel')}
-              className={`flex-1 min-h-[38px] py-1 px-3 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                mobileView === 'panel'
-                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
-              }`}
-            >
-              <ListFilter className="w-3.5 h-3.5" />
-              {activeTab === 'navigation' ? 'Planer i Wskazówki' : 'Formularz'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setMobileView('map')}
-              className={`flex-1 min-h-[38px] py-1 px-3 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                mobileView === 'map'
-                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900'
-              }`}
-            >
-              <MapIcon className="w-3.5 h-3.5" />
-              Mapa ({route ? `${route.all_barriers.length} barier` : `${allBarriers.length}`})
-            </button>
-          </div>
-        </div>
-
-        {/* Content Layout: Responsive grid on lg, switchable on mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 flex-1 items-start">
-          {/* Left Column: Form & Route Info (Visible on mobile if mobileView === 'panel') */}
-          <div
-            className={`lg:col-span-5 flex flex-col gap-4 sm:gap-5 ${
-              mobileView === 'panel' ? 'block' : 'hidden lg:block'
-            }`}
-          >
-            {activeTab === 'navigation' ? (
+        {/* MAIN TAB 1: MAPA (Interactive Map with Floating Overlays - Attachment 1 & 2) */}
+        <div className={`relative flex-1 ${mobileTab === 'map' ? 'flex flex-col' : 'hidden'}`}>
+          {/* Top Overlays on Map */}
+          <div className="absolute top-3 left-3 right-3 z-20 flex flex-col gap-2.5 pointer-events-none">
+            {route ? (
               <>
-                <RoutePlanner
-                  startPoint={startPoint}
-                  endPoint={endPoint}
-                  onSetStartPoint={setStartPoint}
-                  onSetEndPoint={setEndPoint}
-                  pickingTarget={pickingTarget}
-                  onSetPickingTarget={handleSetPickingTarget}
-                  useCustomCoords={useCustomCoords}
-                  onToggleCustomCoords={(enabled) => {
-                    setUseCustomCoords(enabled);
-                    if (!enabled) {
-                      setPickingTarget(null);
-                    }
-                  }}
-                  onSearchRoute={handleSearchRoute}
-                  isLoading={isLoadingRoute}
-                />
+                {/* Top Turn-by-Turn Banner (Attachment 2) */}
+                <div className="pointer-events-auto">
+                  <TurnBanner currentStep={route.steps?.[0]} />
+                </div>
 
-                {/* Mobile Quick Action to jump to Map */}
-                {route && (
-                  <button
-                    type="button"
-                    onClick={() => setMobileView('map')}
-                    className="lg:hidden w-full py-2.5 px-3 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
-                  >
-                    <MapIcon className="w-4 h-4 text-blue-600" />
-                    Zobacz trasę na mapie ({route.all_barriers.length} przeszkód)
-                  </button>
-                )}
-
-                <RouteObstacleList route={route} isLoading={isLoadingRoute} />
+                {/* Floating Stat Cards (Attachment 2) */}
+                <div className="pointer-events-auto">
+                  <RouteStatCards route={route} />
+                </div>
               </>
             ) : (
-              <>
-                <AddBarrierForm
-                  selectedLocation={pickedLocation}
-                  onSelectCurrentLocation={handleUseCurrentLocation}
-                  currentUser={currentUser}
-                  onBarrierCreated={(info) => {
-                    fetchBarriers();
-                    if (info) {
-                      unlockBarrierTile(info.latitude, info.longitude, info.hasPhoto);
-                    }
-                    if (startPoint && endPoint) {
-                      handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
-                    }
-                  }}
-                />
+              /* Search Trigger Pill if no route */
+              <button
+                type="button"
+                onClick={() => setMobileTab('route')}
+                className="w-full h-12 px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-slate-200 text-slate-600 hover:text-slate-900 flex items-center gap-3 text-xs font-semibold pointer-events-auto cursor-pointer transition-all active:scale-[0.99]"
+              >
+                <Search className="w-4 h-4 text-purple-600" />
+                <span className="flex-1 text-left truncate">Dokąd chcesz dotrzeć w Krakowie?</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                  Wyznacz trasę
+                </span>
+              </button>
+            )}
 
-                {/* Mobile quick button to pick point on map */}
-                <button
-                  type="button"
-                  onClick={() => setMobileView('map')}
-                  className="lg:hidden w-full py-2.5 px-3 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900 text-xs font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
-                >
-                  <MapIcon className="w-4 h-4" />
-                  Wskaż punkt na mapie
-                </button>
-              </>
+            {/* Picking Target Notice */}
+            {pickingTarget && (
+              <div className="p-2.5 rounded-2xl bg-slate-900 text-white text-xs font-bold text-center pointer-events-auto shadow-lg animate-pulse">
+                {pickingTarget === 'start' ? '📍 Dotknij mapy, aby wybrać Punkt Startowy (A)' : '🏁 Dotknij mapy, aby wybrać Punkt Docelowy (B)'}
+              </div>
             )}
           </div>
 
-          {/* Right Column: Interactive Map (Visible on mobile if mobileView === 'map') */}
-          <div
-            className={`lg:col-span-7 h-[420px] sm:h-[500px] lg:h-[700px] sticky top-20 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm bg-white dark:bg-zinc-900 flex flex-col ${
-              mobileView === 'map' ? 'block' : 'hidden lg:flex'
-            }`}
-          >
-            {/* Map Header Status */}
-            <div className="p-2.5 sm:p-3 bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-300">
-              <span className="font-semibold flex items-center gap-1.5 truncate max-w-[260px] sm:max-w-none">
-                <MapIcon className="w-3.5 h-3.5 text-blue-600 shrink-0" aria-hidden="true" />
-                {activeTab === 'navigation' ? (
-                  pickingTarget === 'start' ? (
-                    <span className="text-green-700 dark:text-green-400 font-bold animate-pulse">
-                      📍 Dotknij mapy, aby wybrać Start (A)
-                    </span>
-                  ) : pickingTarget === 'end' ? (
-                    <span className="text-red-700 dark:text-red-400 font-bold animate-pulse">
-                      🏁 Dotknij mapy, aby wybrać Cel (B)
-                    </span>
-                  ) : useCustomCoords ? (
-                    'Wskaż punkt A lub B w planerze, aby zaznaczyć na mapie'
-                  ) : (
-                    'Mapa Krakowa'
-                  )
-                ) : (
-                  'Dotknij mapy, aby wskazać barierę'
-                )}
-              </span>
+          {/* Leaflet Map Component */}
+          <div className="w-full h-[calc(100vh-140px)] min-h-[480px]">
+            <AccessibleMap
+              start={startPoint}
+              end={endPoint}
+              routeCoordinates={route?.geometry?.coordinates || []}
+              barriers={route?.all_barriers || allBarriers}
+              selectedLocation={mobileTab === 'crowdsource' ? pickedLocation : null}
+              onMapClick={handleMapClick}
+              discoveredTileIds={discoveredTileIds}
+              auditedTileIds={auditedTileIds}
+              showDiscoveryGrid={showDiscoveryGrid}
+              currentGpsCoords={currentGpsCoords}
+              centerOnGpsTrigger={centerOnGpsTrigger}
+              isLiveLocationActive={liveLocationEnabled}
+            />
+          </div>
 
-              <span className="text-[11px] text-zinc-500 shrink-0">
-                {route ? `${route.all_barriers.length} barier` : `${allBarriers.length} barier`}
-              </span>
-            </div>
-
-            {/* Map Container */}
-            <div className="flex-1 relative">
-              <AccessibleMap
-                start={startPoint}
-                end={endPoint}
-                routeCoordinates={route?.geometry?.coordinates || []}
-                barriers={route?.all_barriers || allBarriers}
-                selectedLocation={activeTab === 'crowdsource' ? pickedLocation : null}
-                onMapClick={handleMapClick}
-                discoveredTileIds={discoveredTileIds}
-                auditedTileIds={auditedTileIds}
-                showDiscoveryGrid={showDiscoveryGrid}
-                currentGpsCoords={currentGpsCoords}
-                centerOnGpsTrigger={centerOnGpsTrigger}
-              />
-            </div>
-
-            {/* Mobile Bottom Floating Switch to return to list */}
-            <div className="lg:hidden p-2 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex gap-2">
+          {/* Bottom Floating Actions on Map (Attachment 1) */}
+          <div className="absolute bottom-4 left-3 right-3 z-20 flex flex-col gap-2.5 pointer-events-none">
+            {/* Quick action button to add barrier / claim sector (Attachment 1) */}
+            <div className="flex justify-end pointer-events-auto">
               <button
                 type="button"
-                onClick={() => setMobileView('panel')}
-                className="w-full py-2.5 px-3 bg-blue-600 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer min-h-[44px] shadow-sm"
+                onClick={() => setMobileTab('crowdsource')}
+                className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-xl flex items-center gap-2.5 transition-transform active:scale-95 cursor-pointer border border-slate-700"
               >
-                <ListFilter className="w-4 h-4" />
-                {activeTab === 'navigation'
-                  ? route
-                    ? 'Zobacz listę kroków i przeszkód'
-                    : 'Wróć do planera trasy'
-                  : 'Wróć do formularza zgłoszenia'}
+                <span className="w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0">
+                  <Camera className="w-4 h-4" />
+                </span>
+                <div className="text-left">
+                  <div className="text-xs font-extrabold leading-tight">Dodaj zdjęcie</div>
+                  <div className="text-[10px] text-slate-400 font-medium">Przejmij sektor</div>
+                </div>
+              </button>
+            </div>
+
+            {/* Magenta CTA "Apply / Zobacz trasę" if route active (Attachment 1) */}
+            {route && (
+              <button
+                type="button"
+                onClick={() => setMobileTab('route')}
+                className="w-full h-12 bg-[#d90479] hover:bg-[#be185d] active:scale-[0.99] text-white font-extrabold text-sm rounded-full shadow-lg shadow-pink-600/30 flex items-center justify-center gap-2 cursor-pointer pointer-events-auto transition-all"
+              >
+                <span>Apply – Zobacz punkty na trasie</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* MAIN TAB 2: TRASA (Route Planner & Timeline - Attachment 2 & 3) */}
+        <div className={`p-4 flex-1 flex flex-col gap-4 ${mobileTab === 'route' ? 'block' : 'hidden'}`}>
+          {route ? (
+            /* Route Active: Show "Co czeka Cię po drodze" Timeline (Attachment 2) */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setRoute(null)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Nowa trasa</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileTab('map')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <span>Pokaż na mapie</span>
+                </button>
+              </div>
+
+              {/* Attachment 2 Bottom Sheet Component */}
+              <RouteTimelineSheet route={route} />
+            </div>
+          ) : (
+            /* Route Inactive: Show "Utwórz trasę" Card (Attachment 3) */
+            <RouteSearchCard
+              startPoint={startPoint}
+              endPoint={endPoint}
+              onSetStartPoint={setStartPoint}
+              onSetEndPoint={setEndPoint}
+              pickingTarget={pickingTarget}
+              onSetPickingTarget={handleSetPickingTarget}
+              useCustomCoords={useCustomCoords}
+              onToggleCustomCoords={(enabled) => {
+                setUseCustomCoords(enabled);
+                if (!enabled) setPickingTarget(null);
+              }}
+              onSearchRoute={handleSearchRoute}
+              isLoading={isLoadingRoute}
+            />
+          )}
+        </div>
+
+        {/* MAIN TAB 3: LIGA (Gamification & Kraków Discovery Stats) */}
+        <div className={`p-4 flex-1 flex flex-col gap-4 ${mobileTab === 'leaderboard' ? 'block' : 'hidden'}`}>
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Trophy className="w-6 h-6 text-amber-500" />
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-900">Liga & Eksploracja</h2>
+              <p className="text-xs text-slate-500">Rozpraszaj mgłę wojny i audytuj dostępność Krakowa</p>
+            </div>
+          </div>
+
+          <DiscoveryBanner
+            userRank={userRank}
+            showDiscoveryGrid={showDiscoveryGrid}
+            onToggleDiscoveryGrid={toggleDiscoveryGrid}
+            unlockedTilesCount={discoveredTileIds.length}
+            auditedPhotosCount={auditedTileIds.length}
+            liveLocationEnabled={liveLocationEnabled}
+            gpsStatusMessage={gpsStatusMessage}
+          />
+        </div>
+
+        {/* MAIN TAB 4: DODAJ (Crowdsourcing - Add Barrier with Photo) */}
+        <div className={`p-4 flex-1 flex flex-col gap-4 ${mobileTab === 'crowdsource' ? 'block' : 'hidden'}`}>
+          <AddBarrierForm
+            selectedLocation={pickedLocation}
+            onSelectCurrentLocation={handleUseCurrentLocation}
+            currentUser={currentUser}
+            onBarrierCreated={(info) => {
+              fetchBarriers();
+              if (info) {
+                unlockBarrierTile(info.latitude, info.longitude, info.hasPhoto);
+              }
+              if (startPoint && endPoint) {
+                handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
+              }
+              setMobileTab('map');
+            }}
+          />
+        </div>
+
+        {/* MAIN TAB 5: PROFIL (Account & Settings) */}
+        <div className={`p-4 flex-1 flex flex-col gap-4 ${mobileTab === 'profile' ? 'block' : 'hidden'}`}>
+          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white font-extrabold text-lg flex items-center justify-center">
+                {currentUser?.nickname?.charAt(0).toUpperCase() || '👤'}
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900">
+                  {currentUser ? currentUser.nickname : 'Konto Gościa'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {currentUser ? currentUser.email : 'Zaloguj się, aby zapisywać zgłoszenia i punkty XP'}
+                </p>
+              </div>
+            </div>
+
+            {/* GPS Toggle Section */}
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  Wędrówka GPS (na żywo)
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  Automatycznie zalicza heksagony podczas spaceru
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggleLiveLocation(!liveLocationEnabled)}
+                className={`w-12 h-7 rounded-full transition-colors relative cursor-pointer ${
+                  liveLocationEnabled ? 'bg-purple-600' : 'bg-slate-300'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow-md absolute top-1 transition-transform ${
+                    liveLocationEnabled ? 'left-6' : 'left-1'
+                  }`}
+                />
               </button>
             </div>
           </div>
         </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 py-3.5 px-4 text-center text-[11px] sm:text-xs text-zinc-500">
-        Kraków bez barier • Projekt na HackYeah • Dostępność WCAG 2.2 AA • PostGIS OpenStreetMap
-      </footer>
+        {/* 5-Item Bottom Navigation Bar (Attachment 1) */}
+        <BottomNavigation
+          activeTab={mobileTab}
+          onChangeTab={(tab) => {
+            setMobileTab(tab);
+            if (tab === 'map' && pickingTarget) {
+              // Keep picking mode
+            }
+          }}
+        />
+      </div>
     </div>
   );
 }

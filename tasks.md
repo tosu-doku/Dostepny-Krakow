@@ -122,4 +122,24 @@
   - **Aktualizacja testów jednostkowych (23 testy):**
     - `tests/grid.test.ts` w pełni przepisane pod H3: indeksowanie $O(1)$, 6-punktowe wierzchołki, bijektywny roundtrip `parseTileId`, próbkowanie tras `routeToTiles` oraz uniwersalny kalkulator rang.
 
+- [x] **Zadanie 14: Mobile-First Portrait UI Refactoring (Branch: `feat/mobile-ui-refactor`)**
+  - **Wymuszenie czystego Light Theme & Typografia Plus Jakarta Sans:**
+    - Usunięto media queries ciemnego motywu, wprowadzono czyste białe i neutralne tła (`#ffffff`, `#f8fafc`, `#0f172a`).
+    - Skonfigurowano nowoczesny krój pisma `Plus Jakarta Sans` w wagach 400–800 (`latin`, `latin-ext`).
+    - Zdefiniowano stałe kolorystyczne w `src/constants/theme.ts` (magenta `#d90479`, fiolet `#7c3aed`, zielony `#34d399`, burgund `#4c0519`).
+  - **Jasnozielone heksagony H3 na zaplanowanej trasie (Załącznik 1):**
+    - W `AccessibleMap.tsx` heksagony przecinające zaplanowaną trasę w trybie wędrówki na żywo zyskują styl jasnozielony (`fillColor: '#34d399'`, `color: '#059669'`), a heksagony mgły wojny pozostają grafitowe.
+    - Wprowadzono pigułki przeszkód i podjazdów bezpośrednio na mapie (`createBarrierPillIcon`: `✓ Podjazd`, `⚠️ Krawężnik 4 cm`).
+    - Dodano pływające przyciski na mapie: `Dodaj zdjęcie / Przejmij sektor` oraz CTA `Apply`.
+  - **Menu kroków na trasie & Nawigacja Turn-by-Turn (Załącznik 2):**
+    - Wdrożono górny ciemny baner manewru `TurnBanner.tsx` z żółtą ikoną skrętu i odległością.
+    - Wdrożono pływające karty statystyk `RouteStatCards.tsx` (`18 min | 14:42`, `1,2 km | bez schodów`).
+    - Wdrożono wysuwany panel `RouteTimelineSheet.tsx` (*„Co czeka Cię po drodze”*) z odznaką pewności trasy, pionową osią czasu barier oraz lektorem Web Speech API (`Włącz opis głosowy trasy`).
+  - **Panel wyszukiwania trasy „Utwórz trasę” & Modal Dostępności (Załącznik 3):**
+    - Wdrożono `RouteSearchCard.tsx` z nagłówkiem w kolorze śliwkowym, dwoma zaokrąglonymi polami wyszukiwania w kształcie pigułki (`rounded-full`) oraz przyciskiem filtrów `SlidersHorizontal`.
+    - Wdrożono `AccessibilityFilterModal.tsx` z wyborem profili: wózek inwalidzki, dziecięcy, niedowidzący, pieszy.
+  - **5-elementowy dolny pasek nawigacji (`BottomNavigation.tsx`):**
+    - Zakładki: Mapa, Trasa, Liga, Dodaj, Profil z płynnym przełączaniem i responsywnym kontenerem mobilnym portrait-first.
+
+
 
