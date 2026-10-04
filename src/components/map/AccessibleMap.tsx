@@ -290,19 +290,7 @@ export default function AccessibleMap({
         opacity: 0.25,          // Zwiększona przezroczystość obramówki
         fillColor: '#475569',   // Mgła wojny
         fillOpacity: 0.22,      // Półprzezroczysta mgła odsłaniająca zarys ulic
-        interactive: true,
-      });
-
-      hex.bindTooltip(
-        `<div style="font-size:12px;font-weight:600;color:#1e293b;">🌫️ Heksagon nieodkryty (Mgła)</div><div style="font-size:10px;color:#64748b;">Przejdź tędy lub włącz lokalizację na żywo • H3: ${cellId}</div>`,
-        { sticky: true }
-      );
-
-      hex.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        if (onTileClickRef.current) {
-          onTileClickRef.current(cellId);
-        }
+        interactive: false,     // Wyłącz interaktywność: brak tooltipów, brak zaznaczania, kliknięcia przechodzą do mapy
       });
 
       hex.addTo(discoveryLayer);
