@@ -85,6 +85,10 @@ export const THEME_COLORS = {
 * **Pływające przyciski szybkiej akcji:**
   * Pływający przycisk ze zdjęciem i aparatem: `Dodaj zdjęcie / Przejmij sektor (+25 XP)`.
   * Akcentowany przycisk CTA `Apply` zamykający filtry i aplikujący zmiany.
+* **Dostępne Kontrolki Mapy (Zoom & Lokalizacja GPS):**
+  * Usunięto domyślne, małe kontrolki Leaflet z lewego górnego rogu (`topleft`), które były zasłaniane przez banery wyszukiwania i trasy.
+  * Zaimplementowano nowoczesne kontrolki przybliżania/oddalania (`+` / `-`) oraz centrowania GPS po **prawej stronie w pionowym środku ekranu** (`right-3 top-1/2 -translate-y-1/2`).
+  * Spełniają normę **WCAG 2.2 AA (Target Size 44x44px)**, są wygodne w obsłudze kciukiem jednej ręki na smartfonie i w 100% dostępne z klawiatury (`focus:ring-2`, `aria-label`).
 
 ---
 

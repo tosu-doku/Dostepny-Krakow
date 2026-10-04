@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Plus, Minus, LocateFixed } from 'lucide-react';
 import { Barrier } from '@/types/barrier';
 import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary, routeToTiles } from '@/services/grid';
 import {
@@ -88,7 +89,7 @@ export default function AccessibleMap({
     const map = L.map(mapContainerRef.current, {
       center: [50.0614, 19.9365],
       zoom: 14,
-      zoomControl: true,
+      zoomControl: false, // Disabled default top-left control in favor of thumb-accessible controls
       zoomAnimation: false,
       fadeAnimation: false,
       markerZoomAnimation: false,
@@ -339,13 +340,25 @@ export default function AccessibleMap({
     }
   }, [centerOnGpsTrigger, currentGpsCoords]);
 
-  const handleRecenterOnGps = () => {
+  const handleZoomIn = () => {
+    mapInstanceRef.current?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    mapInstanceRef.current?.zoomOut();
+  };
+
+  const handleRecenter = () => {
     const map = mapInstanceRef.current;
-    if (!map || !currentGpsCoords) return;
+    if (!map) return;
     try {
-      map.setView([currentGpsCoords.lat, currentGpsCoords.lng], 16, { animate: false });
+      if (currentGpsCoords) {
+        map.setView([currentGpsCoords.lat, currentGpsCoords.lng], 16, { animate: false });
+      } else {
+        map.setView([50.0614, 19.9365], 14, { animate: false });
+      }
     } catch (err) {
-      console.warn('Recenter GPS error:', err);
+      console.warn('Recenter map error:', err);
     }
   };
 
@@ -358,18 +371,44 @@ export default function AccessibleMap({
         aria-label="Interaktywna mapa Krakowa z trasą i barierami architektonicznymi"
       />
 
-      {/* Floating GPS Recenter Button when live coordinates are available */}
-      {currentGpsCoords && (
+      {/* Floating Accessible Map Controls (Right Side - Thumb Ergonomics & WCAG 44x44px target) */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[400] flex flex-col gap-2 pointer-events-auto">
+        {/* Zoom In & Zoom Out Stack */}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 flex flex-col overflow-hidden">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            aria-label="Przybliż mapę"
+            title="Przybliż mapę (+)"
+            className="w-11 h-11 flex items-center justify-center text-slate-800 hover:text-purple-600 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer border-b border-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-600/40"
+          >
+            <Plus className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            aria-label="Oddal mapę"
+            title="Oddal mapę (-)"
+            className="w-11 h-11 flex items-center justify-center text-slate-800 hover:text-purple-600 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-600/40"
+          >
+            <Minus className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Center / Locate Button */}
         <button
           type="button"
-          onClick={handleRecenterOnGps}
-          title="Wyśrodkuj widok na mojej lokalizacji GPS"
-          className="absolute top-3 right-3 z-10 px-3 py-2 bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 rounded-xl shadow-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-transform active:scale-95 cursor-pointer flex items-center gap-2 text-xs font-bold"
+          onClick={handleRecenter}
+          aria-label={currentGpsCoords ? "Wycentruj na Twojej pozycji GPS" : "Wycentruj na Rynku Głównym w Krakowie"}
+          title={currentGpsCoords ? "Moja lokalizacja GPS" : "Centrum Krakowa (Rynek)"}
+          className="w-11 h-11 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 flex items-center justify-center text-slate-800 hover:text-purple-600 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-600/40 relative"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
-          <span>Moja lokalizacja</span>
+          <LocateFixed className={`w-5 h-5 ${currentGpsCoords ? 'text-blue-600' : 'text-slate-700'}`} aria-hidden="true" />
+          {currentGpsCoords && (
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+          )}
         </button>
-      )}
+      </div>
     </div>
   );
 }
