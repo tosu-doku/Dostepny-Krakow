@@ -77,14 +77,33 @@ export default function RouteTimelineSheet({
       <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto shrink-0 mb-1" />
 
       {/* Header (Attachment 2) */}
-      <div className="flex items-start justify-between gap-2 min-w-0">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+      <div className="flex flex-col gap-1.5">
+        {/* Top Badges Row */}
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wide whitespace-nowrap">
               {pointsCountText}
             </span>
             <span
-              className={`inline-flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-full border shadow-2xs whitespace-nowrap shrink-0 ${
+              title={
+                route.profile === 'foot_walking'
+                  ? 'Profil: Pieszy'
+                  : route.profile === 'wheelchair'
+                  ? 'Profil: Wózek inwalidzki'
+                  : route.profile === 'stroller'
+                  ? 'Profil: Wózek dziecięcy'
+                  : 'Profil: Osoba niedowidząca'
+              }
+              aria-label={
+                route.profile === 'foot_walking'
+                  ? 'Profil: Pieszy'
+                  : route.profile === 'wheelchair'
+                  ? 'Profil: Wózek inwalidzki'
+                  : route.profile === 'stroller'
+                  ? 'Profil: Wózek dziecięcy'
+                  : 'Profil: Osoba niedowidząca'
+              }
+              className={`inline-flex items-center justify-center w-6 h-6 rounded-full border shadow-2xs shrink-0 text-xs ${
                 route.profile === 'foot_walking'
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   : route.profile === 'wheelchair'
@@ -94,22 +113,24 @@ export default function RouteTimelineSheet({
                   : 'bg-amber-50 text-amber-800 border-amber-300'
               }`}
             >
-              {route.profile === 'foot_walking' && '🚶 Pieszy'}
-              {route.profile === 'wheelchair' && '♿ Wózek'}
-              {route.profile === 'stroller' && '👶 Wózek dz.'}
-              {route.profile === 'visually_impaired' && '👁️ Wzrok'}
+              {route.profile === 'foot_walking' && '🚶'}
+              {route.profile === 'wheelchair' && '♿'}
+              {route.profile === 'stroller' && '👶'}
+              {route.profile === 'visually_impaired' && '👁️'}
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mt-1 truncate">
-            Co czeka Cię po drodze
-          </h2>
+
+          {/* Confidence Badge (Attachment 2) */}
+          <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold shrink-0 whitespace-nowrap">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Trasa {averageConfidence}% pewna</span>
+          </div>
         </div>
 
-        {/* Confidence Badge (Attachment 2) */}
-        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold shrink-0 whitespace-nowrap">
-          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Trasa {averageConfidence}% pewna</span>
-        </div>
+        {/* Full-width Title Heading (Never truncated!) */}
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+          Co czeka Cię po drodze
+        </h2>
       </div>
 
       {/* Timeline List (Attachment 2 - Perfectly Vertically Aligned Axis) */}
