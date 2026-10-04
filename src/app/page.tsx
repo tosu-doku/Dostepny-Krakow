@@ -11,7 +11,7 @@ import RouteStatCards from '@/components/navigation/RouteStatCards';
 import RouteTimelineSheet from '@/components/navigation/RouteTimelineSheet';
 import BottomNavigation, { ActiveMobileTab } from '@/components/layout/BottomNavigation';
 import AddBarrierForm from '@/components/crowdsourcing/AddBarrierForm';
-import UserAccountMenu from '@/components/auth/UserAccountMenu';
+import ProfileView from '@/components/profile/ProfileView';
 import DiscoveryBanner from '@/components/gamification/DiscoveryBanner';
 import { useDiscovery } from '@/hooks/useDiscovery';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
@@ -100,6 +100,24 @@ export default function Home() {
   useEffect(() => {
     fetchBarriers();
   }, [fetchBarriers]);
+
+  // Restore user session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setCurrentUser(data.user);
+          }
+        }
+      } catch (err) {
+        console.warn('Nie udało się sprawdzić aktywnej sesji:', err);
+      }
+    };
+    checkSession();
+  }, []);
 
   // Handle route calculation
   const handleSearchRoute = async (
@@ -203,28 +221,33 @@ export default function Home() {
         
         {/* Subtle Top Status Bar */}
         <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0">
               ♿
             </div>
             <div>
-              <span className="text-sm font-black tracking-tight text-slate-900 block leading-tight">
+              <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-tight">
                 Kraków bez barier
-              </span>
-              <span className="text-[10px] font-bold text-emerald-600 block leading-none">
-                WCAG 2.2 AA • PostGIS
-              </span>
+              </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <UserAccountMenu
-              currentUser={currentUser}
-              onUserChange={setCurrentUser}
-              onPurgeComplete={handlePurgeComplete}
-              liveLocationEnabled={liveLocationEnabled}
-              onToggleLiveLocation={handleToggleLiveLocation}
-            />
+          {/* Non-clickable user tile: shows username, level and XP */}
+          <div
+            className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-200/90 rounded-2xl select-none pointer-events-none shadow-2xs"
+            aria-label={`Użytkownik ${currentUser?.nickname || 'Odkrywca'}, Poziom ${userRank?.level ?? 1}, ${userRank?.totalXp ?? 0} punktów doświadczenia`}
+          >
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-2xs shrink-0">
+              {currentUser?.nickname?.charAt(0).toUpperCase() || '👤'}
+            </div>
+            <div className="text-left flex flex-col justify-center">
+              <span className="text-xs font-black text-slate-900 leading-none truncate max-w-[85px] sm:max-w-[110px]">
+                {currentUser?.nickname || 'Odkrywca'}
+              </span>
+              <span className="text-[10px] font-bold text-purple-700 leading-tight mt-0.5 whitespace-nowrap">
+                Poz. {userRank?.level ?? 1} • {userRank?.totalXp ?? 0} XP
+              </span>
+            </div>
           </div>
         </header>
 
@@ -445,49 +468,18 @@ export default function Home() {
           />
         </div>
 
-        {/* MAIN TAB 5: PROFIL (Account & Settings) */}
+        {/* MAIN TAB 5: PROFIL (Account, Settings & Moderation) */}
         <div className={`p-4 flex-1 flex flex-col gap-4 ${mobileTab === 'profile' ? 'block' : 'hidden'}`}>
-          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white font-extrabold text-lg flex items-center justify-center">
-                {currentUser?.nickname?.charAt(0).toUpperCase() || '👤'}
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base text-slate-900">
-                  {currentUser ? currentUser.nickname : 'Konto Gościa'}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  {currentUser ? currentUser.email : 'Zaloguj się, aby zapisywać zgłoszenia i punkty XP'}
-                </p>
-              </div>
-            </div>
-
-            {/* GPS Toggle Section */}
-            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">
-              <div>
-                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  Wędrówka GPS (na żywo)
-                </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Automatycznie zalicza heksagony podczas spaceru
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleToggleLiveLocation(!liveLocationEnabled)}
-                className={`w-12 h-7 rounded-full transition-colors relative cursor-pointer ${
-                  liveLocationEnabled ? 'bg-purple-600' : 'bg-slate-300'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-md absolute top-1 transition-transform ${
-                    liveLocationEnabled ? 'left-6' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
+          <ProfileView
+            currentUser={currentUser}
+            onUserChange={setCurrentUser}
+            userRank={userRank}
+            unlockedTilesCount={discoveredTileIds.length}
+            auditedPhotosCount={auditedTileIds.length}
+            liveLocationEnabled={liveLocationEnabled}
+            onToggleLiveLocation={handleToggleLiveLocation}
+            onPurgeComplete={handlePurgeComplete}
+          />
         </div>
 
         {/* 5-Item Bottom Navigation Bar (Attachment 1) */}

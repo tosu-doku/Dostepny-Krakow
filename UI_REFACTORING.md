@@ -166,6 +166,7 @@ Aplikacja mobilna posiada stały, ergonomiczny pasek dolny z 5 zakładkami:
 | Plik | Typ | Rola w Systemie |
 | :--- | :--- | :--- |
 | `src/constants/theme.ts` | **Nowy** | Centralna definicja Design Tokens (kolory, typografia, cienie, promienie). |
+| `src/components/profile/ProfileView.tsx` | **Nowy** | Pełny widok profilu w Light Theme: zarządzanie kontem, status rangi gracza, przełącznik GPS na żywo, narzędzie Bad Actor Purge i informacje o WCAG. |
 | `src/components/layout/BottomNavigation.tsx` | Modyfikacja | Mobilny dolny pasek nawigacyjny z 5 zakładkami (zakładka *Eksploracja* z ikoną `Compass`). |
 | `src/components/gamification/DailyQuestModal.tsx` | **Nowy** | Wysuwany arkusz misji dnia (Załącznik 4) z 5 segmentami, odznaką i CTA do zdjęcia. |
 | `src/components/gamification/DiscoveryBanner.tsx` | Modyfikacja | Przepisanie na czysty Light Theme, karty mobilne i listę 2 misji dziennych z mnożnikiem 2x XP. |
@@ -214,6 +215,12 @@ Refaktoring w pełni respektuje zasady dostępności opisane w [`AGENTS.md`](fil
   - [x] Modal `AccessibilityFilterModal.tsx` z profilami i suwakami barier.
 - [x] **Dolna Nawigacja Mobilna:** Komponent `BottomNavigation.tsx` z 5 zakładkami.
 - [x] **Integracja w `src/app/page.tsx`:** Responsywny kontener `max-w-md mx-auto min-h-screen`.
+- [x] **Refaktoring Top Baru & Zakładki Profil:**
+  - [x] Usunięto podpisy techniczne `WCAG 2.2 AA • PostGIS` z lewego górnego rogu.
+  - [x] Powiększono i wyeksponowano nazwę aplikacji (*Kraków bez barier*).
+  - [x] Zastąpiono klikalną ikonkę w prawym górnym rogu eleganckim, nieklikalnym kafelkiem z nazwą użytkownika, poziomem i punktami XP (`Poz. X • Y XP`).
+  - [x] Przeniesiono pełne ustawienia konta, przełącznik wędrówki GPS na żywo oraz narzędzie moderacji `BadActorPurgeModal` do zakładki **Profil** (`ProfileView.tsx`).
+  - [x] Wszystkie elementy w 100% w jasnym motywie (Light Theme) i w języku polskim.
 - [x] **Testy Jednostkowe & Kompilacja:**
   - [x] Vitest: **23/23** testów passing (`npm test`).
   - [x] ESLint: **0 błędów** (`npm run lint`).
