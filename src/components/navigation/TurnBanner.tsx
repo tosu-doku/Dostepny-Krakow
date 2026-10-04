@@ -42,10 +42,10 @@ export default function TurnBanner({
 
       {/* Maneuver Text (Attachment 2) */}
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-semibold text-slate-400 tracking-wide uppercase">
+        <div className="text-xs sm:text-sm font-extrabold text-amber-300 tracking-wide uppercase">
           {distanceText}
         </div>
-        <div className="text-sm sm:text-base font-extrabold text-white truncate leading-tight mt-0.5">
+        <div className="text-base sm:text-lg font-black text-white truncate leading-tight mt-0.5">
           {instructionText}
         </div>
       </div>

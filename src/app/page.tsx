@@ -234,17 +234,17 @@ export default function Home() {
 
           {/* Non-clickable user tile: shows username, level and XP */}
           <div
-            className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-200/90 rounded-2xl select-none pointer-events-none shadow-2xs"
+            className="flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 border border-slate-200/90 rounded-2xl select-none pointer-events-none shadow-2xs"
             aria-label={`Użytkownik ${currentUser?.nickname || 'Odkrywca'}, Poziom ${userRank?.level ?? 1}, ${userRank?.totalXp ?? 0} punktów doświadczenia`}
           >
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-2xs shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-2xs shrink-0">
               {currentUser?.nickname?.charAt(0).toUpperCase() || '👤'}
             </div>
             <div className="text-left flex flex-col justify-center">
-              <span className="text-xs font-black text-slate-900 leading-none truncate max-w-[85px] sm:max-w-[110px]">
+              <span className="text-sm font-black text-slate-900 leading-none truncate max-w-[90px] sm:max-w-[110px]">
                 {currentUser?.nickname || 'Odkrywca'}
               </span>
-              <span className="text-[10px] font-bold text-purple-700 leading-tight mt-0.5 whitespace-nowrap">
+              <span className="text-xs font-extrabold text-purple-700 leading-tight mt-0.5 whitespace-nowrap">
                 Poz. {userRank?.level ?? 1} • {userRank?.totalXp ?? 0} XP
               </span>
             </div>
@@ -255,14 +255,14 @@ export default function Home() {
         {errorMessage && (
           <div
             role="alert"
-            className="m-3 p-3 bg-red-50 border border-red-200 text-red-900 rounded-2xl text-xs flex items-center gap-2 animate-in fade-in"
+            className="m-3 p-3.5 bg-red-50 border border-red-200 text-red-900 rounded-2xl text-sm flex items-center gap-2.5 animate-in fade-in"
           >
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <span className="flex-1 font-medium">{errorMessage}</span>
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            <span className="flex-1 font-semibold">{errorMessage}</span>
             <button
               type="button"
               onClick={() => setErrorMessage(null)}
-              className="text-red-600 font-bold text-xs"
+              className="text-red-600 font-extrabold text-sm p-1 cursor-pointer"
             >
               ✕
             </button>
@@ -291,26 +291,26 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setMobileTab('route')}
-                  className="w-full h-12 px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-slate-200 text-slate-600 hover:text-slate-900 flex items-center gap-3 text-xs font-semibold pointer-events-auto cursor-pointer transition-all active:scale-[0.99]"
+                  className="w-full min-h-[48px] px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-slate-200 text-slate-700 hover:text-slate-900 flex items-center gap-3 text-sm font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99]"
                 >
-                  <Search className="w-4 h-4 text-purple-600" />
+                  <Search className="w-4 h-4 text-purple-600 shrink-0" />
                   <span className="flex-1 text-left truncate">Dokąd chcesz dotrzeć w Krakowie?</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                  <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-purple-100 text-purple-800 shrink-0">
                     Wyznacz trasę
                   </span>
                 </button>
 
-                {/* Nearby Daily Quest Indicator Pill (Attachment 4) */}
+                {/* Nearby Daily Quest Indicator Pill (Matching rounded-full and height) */}
                 <button
                   type="button"
                   onClick={() => setMobileTab('leaderboard')}
-                  className="w-full px-3.5 py-2 rounded-2xl bg-white/95 backdrop-blur-md shadow-md border border-pink-200/90 text-slate-800 flex items-center justify-between text-xs font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99] hover:bg-pink-50/50"
+                  className="w-full min-h-[48px] px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-pink-200/90 text-slate-800 flex items-center justify-between text-sm font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99] hover:bg-pink-50/50"
                 >
                   <span className="flex items-center gap-2 text-slate-900 truncate">
-                    <span className="w-2 h-2 rounded-full bg-[#d90479] animate-pulse shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#d90479] animate-pulse shrink-0" />
                     <span className="truncate">Misja dnia: Park Krakowski (Krowodrza)</span>
                   </span>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-pink-100 text-[#d90479] shrink-0">
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-pink-100 text-[#d90479] shrink-0 border border-pink-200">
                     +200 XP • 2x
                   </span>
                 </button>
@@ -319,7 +319,7 @@ export default function Home() {
 
             {/* Picking Target Notice */}
             {pickingTarget && (
-              <div className="p-2.5 rounded-2xl bg-slate-900 text-white text-xs font-bold text-center pointer-events-auto shadow-lg animate-pulse">
+              <div className="p-3 rounded-full bg-slate-900 text-white text-sm font-extrabold text-center pointer-events-auto shadow-lg animate-pulse border border-slate-700">
                 {pickingTarget === 'start' ? '📍 Dotknij mapy, aby wybrać Punkt Startowy (A)' : '🏁 Dotknij mapy, aby wybrać Punkt Docelowy (B)'}
               </div>
             )}

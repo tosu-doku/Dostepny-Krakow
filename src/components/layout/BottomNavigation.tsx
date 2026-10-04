@@ -46,19 +46,19 @@ export default function BottomNavigation({
               type="button"
               onClick={() => onChangeTab(item.id)}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center min-w-[56px] min-h-[48px] px-2.5 py-1.5 rounded-2xl transition-all duration-200 cursor-pointer ${
+              className={`flex flex-col items-center justify-center min-w-[58px] min-h-[50px] px-2 py-1.5 rounded-2xl transition-all duration-200 cursor-pointer ${
                 isActive
-                  ? 'bg-purple-100 text-purple-700 font-bold shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                  ? 'bg-purple-100 text-purple-800 font-bold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
               }`}
             >
               <Icon
                 className={`w-5 h-5 transition-transform duration-200 ${
-                  isActive ? 'scale-110 text-purple-700' : 'text-slate-500'
+                  isActive ? 'scale-110 text-purple-700' : 'text-slate-600'
                 }`}
                 aria-hidden="true"
               />
-              <span className={`text-[11px] mt-0.5 tracking-tight ${isActive ? 'font-bold' : 'font-medium'}`}>
+              <span className={`text-xs mt-0.5 tracking-tight ${isActive ? 'font-black text-purple-900' : 'font-bold text-slate-600'}`}>
                 {item.label}
               </span>
             </button>

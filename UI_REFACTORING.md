@@ -221,6 +221,11 @@ Refaktoring w pełni respektuje zasady dostępności opisane w [`AGENTS.md`](fil
   - [x] Zastąpiono klikalną ikonkę w prawym górnym rogu eleganckim, nieklikalnym kafelkiem z nazwą użytkownika, poziomem i punktami XP (`Poz. X • Y XP`).
   - [x] Przeniesiono pełne ustawienia konta, przełącznik wędrówki GPS na żywo oraz narzędzie moderacji `BadActorPurgeModal` do zakładki **Profil** (`ProfileView.tsx`).
   - [x] Wszystkie elementy w 100% w jasnym motywie (Light Theme) i w języku polskim.
+- [x] **Ujednolicenie Geometrii i Dostępność dla Osób Słabowidzących (Low Vision):**
+  - [x] **Ujednolicenie rounding:** Kafelek *Misja Dnia* na mapie głównej ma teraz to samo zaokrąglenie `rounded-full` i wysokość `min-h-[48px]` co pigułka wyszukiwania trasy.
+  - [x] **Skala bazowa typografii:** Ustawiono `html { font-size: 17px; }` w `globals.css`, co powiększa całą aplikację o ~10% dla optymalnej czytelności.
+  - [x] **Eliminacja mikroskopijnych fontów:** Zastąpiono `text-[9px]`, `text-[10px]`, `text-[11px]` czytelnymi klasami `text-xs font-bold`, `text-sm font-bold` oraz `text-base` w całej aplikacji.
+  - [x] **Zwiększony kontrast etykiet:** Poprawiono kontrast podpisów manewrów w `TurnBanner`, odznak w `DiscoveryBanner` oraz arkuszu `RouteTimelineSheet`.
 - [x] **Testy Jednostkowe & Kompilacja:**
   - [x] Vitest: **23/23** testów passing (`npm test`).
   - [x] ESLint: **0 błędów** (`npm run lint`).

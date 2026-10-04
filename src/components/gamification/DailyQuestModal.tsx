@@ -81,17 +81,17 @@ export default function DailyQuestModal({
 
         {/* Quest Title & Icon Block (Attachment 4) */}
         <div className="flex flex-col gap-1">
-          <div className="text-xs font-bold text-[#d90479]">
+          <div className="text-sm font-extrabold text-[#d90479]">
             {quest.distanceText}
           </div>
 
           <div className="flex items-center gap-3.5 mt-0.5">
             {/* Magenta Icon Box */}
-            <div className="w-12 h-12 rounded-2xl bg-[#d90479] text-white flex items-center justify-center shrink-0 shadow-md shadow-pink-600/25">
+            <div className="w-13 h-13 rounded-2xl bg-[#d90479] text-white flex items-center justify-center shrink-0 shadow-md shadow-pink-600/25">
               {quest.category === 'STAIRS' ? (
                 /* Stairs Icon matching Attachment 4 */
                 <svg
-                  className="w-6 h-6 stroke-white stroke-[2.5] fill-none"
+                  className="w-7 h-7 stroke-white stroke-[2.5] fill-none"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
                 >
@@ -99,18 +99,18 @@ export default function DailyQuestModal({
                 </svg>
               ) : (
                 /* Exploration Sparkles */
-                <Sparkles className="w-6 h-6" />
+                <Sparkles className="w-7 h-7" />
               )}
             </div>
 
             <div className="flex-1 min-w-0">
               <h2
                 id="quest-modal-title"
-                className="text-lg sm:text-xl font-black text-slate-900 leading-snug tracking-tight"
+                className="text-xl sm:text-2xl font-black text-slate-900 leading-snug tracking-tight"
               >
                 {quest.title}
               </h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-sm text-slate-600 font-medium mt-0.5">
                 {quest.subtitle}
               </p>
             </div>
@@ -121,15 +121,15 @@ export default function DailyQuestModal({
         <div className="bg-[#fff1f7] border border-pink-200/90 rounded-2xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black text-slate-900 leading-none">
+              <span className="text-3xl font-black text-slate-900 leading-none">
                 {quest.currentChecks}
               </span>
-              <span className="text-xs font-semibold text-slate-600">
+              <span className="text-sm font-bold text-slate-700">
                 dotychczasowe sprawdzenia
               </span>
             </div>
 
-            <span className="text-[11px] font-extrabold px-3 py-1 rounded-full bg-[#fef3c7] text-[#92400e] border border-amber-300 shadow-2xs">
+            <span className="text-xs font-black px-3.5 py-1 rounded-full bg-[#fef3c7] text-[#92400e] border border-amber-300 shadow-2xs">
               {quest.qualityStatus}
             </span>
           </div>
@@ -139,7 +139,7 @@ export default function DailyQuestModal({
             {[1, 2, 3, 4, 5].map((seg) => (
               <div
                 key={seg}
-                className={`h-2 flex-1 rounded-full transition-all ${
+                className={`h-2.5 flex-1 rounded-full transition-all ${
                   seg <= quest.progressCurrent
                     ? 'bg-[#d90479]'
                     : 'bg-pink-200/80'
@@ -149,25 +149,25 @@ export default function DailyQuestModal({
           </div>
 
           {/* Explanation Text */}
-          <p className="text-xs text-slate-700 leading-relaxed font-medium">
+          <p className="text-sm text-slate-800 leading-relaxed font-semibold">
             {quest.qualityNote}
           </p>
         </div>
 
         {/* Rewards & Bonus Badges */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-            <Trophy className="w-4 h-4 text-amber-500" />
+          <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+            <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
             <span>
               +{totalRewardXp} XP za wykonanie zadania
             </span>
-            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+            <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
               {quest.multiplier}x XP Aktywny
             </span>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
               <span>{quest.bonusBadge}</span>
             </span>
           </div>
@@ -177,24 +177,24 @@ export default function DailyQuestModal({
         <button
           type="button"
           onClick={() => onActionClick(quest)}
-          className="w-full bg-[#d90479] hover:bg-[#be185d] active:scale-[0.99] text-white rounded-2xl p-3 sm:p-3.5 flex items-center justify-between shadow-xl shadow-pink-600/30 transition-all cursor-pointer"
+          className="w-full bg-[#d90479] hover:bg-[#be185d] active:scale-[0.99] text-white rounded-2xl p-3.5 sm:p-4 flex items-center justify-between shadow-xl shadow-pink-600/30 transition-all cursor-pointer"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <Camera className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Camera className="w-6 h-6 text-white" />
             </div>
 
             <div className="text-left">
-              <div className="text-sm font-extrabold leading-tight">
+              <div className="text-base font-black leading-tight">
                 Zrób zdjęcie i zalicz zadanie
               </div>
-              <div className="text-[11px] text-pink-100 font-medium">
+              <div className="text-xs text-pink-100 font-semibold mt-0.5">
                 Zajmie około 30 sekund
               </div>
             </div>
           </div>
 
-          <ChevronRight className="w-5 h-5 text-white shrink-0" />
+          <ChevronRight className="w-6 h-6 text-white shrink-0" />
         </button>
       </div>
     </div>

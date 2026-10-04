@@ -134,7 +134,7 @@ export default function RouteSearchCard({
         </h1>
         {profile !== 'foot_walking' && (
           <span
-            className={`text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-2xs flex items-center gap-1.5 ${
+            className={`text-xs font-black px-3.5 py-1.5 rounded-full border shadow-2xs flex items-center gap-1.5 ${
               profile === 'wheelchair'
                 ? 'bg-blue-50 text-blue-800 border-blue-300'
                 : profile === 'stroller'
@@ -162,7 +162,7 @@ export default function RouteSearchCard({
               onChange={(e) => setStartQuery(e.target.value)}
               placeholder="Wybierz początkowy punkt"
               aria-label="Wybierz początkowy punkt trasy"
-              className="w-full h-13 pl-11 pr-4 bg-white border border-slate-300 rounded-full text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all shadow-xs"
+              className="w-full h-13 pl-11 pr-4 bg-white border border-slate-300 rounded-full text-base font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all shadow-xs"
             />
           </div>
 
@@ -197,16 +197,16 @@ export default function RouteSearchCard({
             onChange={(e) => setEndQuery(e.target.value)}
             placeholder="Wybierz końcowy punkt"
             aria-label="Wybierz końcowy punkt trasy"
-            className="w-full h-13 pl-11 pr-4 bg-white border border-slate-300 rounded-full text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all shadow-xs"
+            className="w-full h-13 pl-11 pr-4 bg-white border border-slate-300 rounded-full text-base font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all shadow-xs"
           />
         </div>
 
         {/* Quick Suggestion Chips */}
         <div>
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+          <span className="text-xs font-black text-slate-600 uppercase tracking-wider block mb-2">
             Popularne trasy w Krakowie:
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {PRESET_ROUTES.map((p, idx) => {
               const isSelected = !useCustomCoords && selectedPresetIdx === idx;
               return (
@@ -217,9 +217,9 @@ export default function RouteSearchCard({
                     if (useCustomCoords) onToggleCustomCoords(false);
                     handleSelectPreset(idx);
                   }}
-                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer ${
+                  className={`text-sm px-3.5 py-2 rounded-full font-semibold transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-purple-600 text-white font-bold shadow-xs'
+                      ? 'bg-purple-600 text-white font-extrabold shadow-xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >

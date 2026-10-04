@@ -33,20 +33,20 @@ export default function RouteStatCards({ route }: RouteStatCardsProps) {
     <div className="flex items-center gap-2.5">
       {/* Duration Card */}
       <div className="flex-1 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-md border border-slate-200/80">
-        <div className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+        <div className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
           {durationMinutes} min
         </div>
-        <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+        <div className="text-xs sm:text-sm font-bold text-slate-600 mt-0.5">
           przyjazd {arrivalTime}
         </div>
       </div>
 
       {/* Distance Card */}
       <div className="flex-1 bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-3.5 shadow-md border border-slate-200/80">
-        <div className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+        <div className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
           {distanceKm} km
         </div>
-        <div className="text-[11px] font-semibold text-slate-500 mt-0.5 capitalize">
+        <div className="text-xs sm:text-sm font-bold text-slate-600 mt-0.5 capitalize">
           {obstacleSub}
         </div>
       </div>

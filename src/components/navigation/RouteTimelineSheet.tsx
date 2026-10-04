@@ -66,11 +66,11 @@ export default function RouteTimelineSheet({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wide">
               {barriers.length + 2} punkty na trasie
             </span>
             <span
-              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-2xs ${
+              className={`text-xs font-black px-2.5 py-1 rounded-full border shadow-2xs ${
                 route.profile === 'foot_walking'
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   : route.profile === 'wheelchair'
@@ -86,13 +86,13 @@ export default function RouteTimelineSheet({
               {route.profile === 'visually_impaired' && '👁️ Niedowidzący'}
             </span>
           </div>
-          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight mt-0.5">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mt-0.5">
             Co czeka Cię po drodze
           </h2>
         </div>
 
         {/* Confidence Badge (Attachment 2) */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shrink-0">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold shrink-0">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
           <span>Trasa {averageConfidence}% pewna</span>
         </div>
@@ -112,11 +112,11 @@ export default function RouteTimelineSheet({
 
           {/* Content */}
           <div className="flex-1 min-w-0 pb-6 pt-0.5">
-            <div className="text-[11px] font-bold text-slate-400">0 m</div>
-            <div className="font-bold text-sm text-slate-900 leading-snug">
+            <div className="text-xs font-black text-slate-500">0 m</div>
+            <div className="font-black text-base text-slate-900 leading-snug">
               Start: {route.steps?.[0]?.instruction || 'Początek trasy'}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+            <p className="text-sm text-slate-600 mt-0.5 leading-relaxed font-medium">
               Równy, utwardzony chodnik. Rozpoczęcie wyznaczonego odcinka.
             </p>
           </div>
@@ -175,9 +175,9 @@ export default function RouteTimelineSheet({
               {/* Content with hover highlight that NEVER affects axis alignment */}
               <div className="flex-1 min-w-0 pb-6 pt-0.5 p-2 -mt-1.5 rounded-xl group-hover:bg-slate-50 transition-colors flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[11px] font-bold text-slate-400">{distanceMeters} m</div>
-                  <div className="font-bold text-sm text-slate-900 truncate leading-snug">{title}</div>
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                  <div className="text-xs font-black text-slate-500">{distanceMeters} m</div>
+                  <div className="font-black text-base text-slate-900 truncate leading-snug">{title}</div>
+                  <p className="text-sm text-slate-600 mt-0.5 line-clamp-2 leading-relaxed font-medium">
                     {description}
                   </p>
                 </div>
@@ -199,13 +199,13 @@ export default function RouteTimelineSheet({
 
           {/* Content */}
           <div className="flex-1 min-w-0 pt-0.5">
-            <div className="text-[11px] font-bold text-slate-400">
+            <div className="text-xs font-black text-slate-500">
               {Math.round(route.total_distance_meters)} m
             </div>
-            <div className="font-bold text-sm text-slate-900 leading-snug">
+            <div className="font-black text-base text-slate-900 leading-snug">
               Cel: {route.steps?.[route.steps.length - 1]?.instruction || 'Punkt docelowy'}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+            <p className="text-sm text-slate-600 mt-0.5 leading-relaxed font-medium">
               Koniec trasy bez barier.
             </p>
           </div>

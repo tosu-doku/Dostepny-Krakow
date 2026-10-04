@@ -107,16 +107,16 @@ export default function DiscoveryBanner({
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-black text-base text-slate-900 tracking-tight truncate">
+                  <h3 className="font-black text-lg text-slate-900 tracking-tight truncate">
                     {title}
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold text-[11px] border border-amber-300 shadow-2xs">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300 shadow-2xs">
                     Poziom {level}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 font-semibold flex-wrap">
-                  <span className="text-purple-700 font-bold">{totalXp} XP</span>
+                <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-600 font-bold flex-wrap">
+                  <span className="text-purple-700 font-extrabold">{totalXp} XP</span>
                   <span>•</span>
                   <span>{currentXpInLevel} / {nextLevelXp} XP</span>
                 </div>
@@ -125,33 +125,33 @@ export default function DiscoveryBanner({
 
             {/* GPS Mode Badge */}
             {liveLocationEnabled ? (
-              <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-[10px] flex items-center gap-1.5 shrink-0 shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" />
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
                 <span>GPS Live</span>
               </span>
             ) : (
-              <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-[10px] shrink-0">
+              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs shrink-0">
                 Planer
               </span>
             )}
           </div>
 
           {/* Level XP Progress Bar */}
-          <div className="space-y-1">
-            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200">
+          <div className="space-y-1.5">
+            <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
               <div
                 className="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-[10px] text-slate-600 font-bold">
+            <div className="flex items-center justify-between text-xs text-slate-600 font-bold">
               <span>Postęp poziomu: {progressPercent}%</span>
               <span>Do poziomu {level + 1}: {nextLevelXp - currentXpInLevel} XP</span>
             </div>
           </div>
 
           {gpsStatusMessage && (
-            <div className="p-2.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-2xl text-xs font-semibold flex items-center gap-2">
+            <div className="p-3 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-2xl text-sm font-semibold flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{gpsStatusMessage}</span>
             </div>
@@ -160,22 +160,22 @@ export default function DiscoveryBanner({
           {/* Stats Grid: H3 Hexagons & Photos */}
           <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
             <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-bold">
-                <Compass className="w-3.5 h-3.5 text-purple-600" />
+              <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold">
+                <Compass className="w-4 h-4 text-purple-600" />
                 <span>Odkryte heksagony</span>
               </div>
-              <div className="text-base font-black text-slate-900">
+              <div className="text-lg font-black text-slate-900">
                 {unlockedTilesCount}{' '}
                 <span className="text-xs text-slate-600 font-bold">/ {KRAKOW_GRID_CONFIG.TOTAL_TILES}</span>
               </div>
             </div>
 
             <div className="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-slate-500 text-[11px] font-bold">
-                <Camera className="w-3.5 h-3.5 text-amber-600" />
+              <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold">
+                <Camera className="w-4 h-4 text-amber-600" />
                 <span>Zaudytowane</span>
               </div>
-              <div className="text-base font-black text-slate-900">
+              <div className="text-lg font-black text-slate-900">
                 {auditedPhotosCount}{' '}
                 <span className="text-xs text-slate-600 font-bold">zdjęć (+100 XP)</span>
               </div>
@@ -187,7 +187,7 @@ export default function DiscoveryBanner({
             <button
               type="button"
               onClick={onToggleDiscoveryGrid}
-              className={`flex-1 py-2.5 px-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              className={`flex-1 py-3 px-3.5 rounded-2xl border text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                 showDiscoveryGrid
                   ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
                   : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
@@ -226,16 +226,16 @@ export default function DiscoveryBanner({
                 <Flame className="w-4 h-4" />
               </span>
               <div>
-                <h3 className="text-sm font-extrabold text-slate-900 tracking-tight leading-tight">
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight leading-tight">
                   Misje Dnia
                 </h3>
-                <span className="text-[11px] font-bold text-[#d90479]">
+                <span className="text-xs font-bold text-[#d90479]">
                   Mnożnik 2x XP aktywny
                 </span>
               </div>
             </div>
 
-            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-pink-50 text-[#d90479] border border-pink-200">
+            <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-pink-50 text-[#d90479] border border-pink-200">
               Reset o 00:00
             </span>
           </div>
@@ -249,27 +249,27 @@ export default function DiscoveryBanner({
                 <div
                   key={quest.id}
                   onClick={() => setSelectedQuest(quest)}
-                  className="p-3.5 rounded-2xl border border-slate-200 hover:border-pink-300 bg-white hover:bg-pink-50/30 transition-all cursor-pointer shadow-2xs active:scale-[0.99] group flex flex-col gap-2.5"
+                  className="p-4 rounded-2xl border border-slate-200 hover:border-pink-300 bg-white hover:bg-pink-50/30 transition-all cursor-pointer shadow-2xs active:scale-[0.99] group flex flex-col gap-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#d90479] mb-0.5">
-                        <MapPin className="w-3 h-3" />
+                      <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#d90479] mb-1">
+                        <MapPin className="w-3.5 h-3.5" />
                         <span>{quest.distanceText}</span>
                       </div>
-                      <h4 className="font-extrabold text-sm text-slate-900 leading-snug group-hover:text-[#d90479] transition-colors truncate">
+                      <h4 className="font-black text-base text-slate-900 leading-snug group-hover:text-[#d90479] transition-colors truncate">
                         {quest.title}
                       </h4>
-                      <p className="text-xs text-slate-500 font-medium">
+                      <p className="text-sm text-slate-600 font-medium mt-0.5">
                         {quest.subtitle}
                       </p>
                     </div>
 
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black border border-purple-200 shadow-2xs">
+                      <span className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 text-xs font-black border border-purple-200 shadow-2xs">
                         +{totalXpReward} XP
                       </span>
-                      <span className="text-[9px] font-extrabold text-[#d90479] bg-pink-50 px-1.5 py-0.5 rounded border border-pink-200">
+                      <span className="text-xs font-extrabold text-[#d90479] bg-pink-50 px-2 py-0.5 rounded border border-pink-200">
                         {quest.multiplier}x Multiplier
                       </span>
                     </div>
@@ -277,13 +277,13 @@ export default function DiscoveryBanner({
 
                   {/* Progress Line */}
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
                       <span>Postęp zadania</span>
                       <span>
                         {quest.progressCurrent} / {quest.progressTotal} ({progressPct}%)
                       </span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/80">
+                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/80">
                       <div
                         className="bg-[#d90479] h-full rounded-full transition-all duration-300"
                         style={{ width: `${progressPct}%` }}
@@ -291,13 +291,13 @@ export default function DiscoveryBanner({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px] font-bold text-slate-500">
-                    <span className="text-[#92400e] bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[10px]">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs font-bold text-slate-600">
+                    <span className="text-[#92400e] bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 text-xs font-bold">
                       {quest.qualityStatus}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[#d90479] group-hover:translate-x-0.5 transition-transform">
+                    <span className="inline-flex items-center gap-1 text-[#d90479] group-hover:translate-x-0.5 transition-transform text-xs font-bold">
                       <span>Szczegóły zadania</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <ChevronRight className="w-4 h-4" />
                     </span>
                   </div>
                 </div>
