@@ -157,3 +157,31 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
     </div>
   `;
 }
+
+/**
+ * Creates a vibrant magenta quest marker icon for the daily quest location on the map.
+ * Shows a pulsing ring + camera icon + "+XP" chip.
+ */
+export function createQuestMarkerIcon(xpReward: number = 200): L.DivIcon {
+  return L.divIcon({
+    className: 'custom-quest-marker',
+    html: `
+      <div style="position:relative;width:48px;height:56px;display:flex;flex-direction:column;align-items:center;">
+        <!-- Pulse ring -->
+        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:48px;height:48px;background-color:#d90479;opacity:0.25;border-radius:50%;animation:ping 2s cubic-bezier(0,0,0.2,1) infinite;"></div>
+        <!-- Main badge -->
+        <div style="position:relative;width:40px;height:40px;background-color:#d90479;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(217,4,121,0.55);z-index:2;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <!-- XP chip below badge -->
+        <div style="margin-top:2px;background-color:#d90479;color:white;font-size:9px;font-weight:900;padding:2px 6px;border-radius:9999px;white-space:nowrap;box-shadow:0 2px 6px rgba(217,4,121,0.4);border:1.5px solid white;z-index:2;">+${xpReward} XP</div>
+      </div>
+    `,
+    iconSize: [48, 56],
+    iconAnchor: [24, 48],
+    popupAnchor: [0, -52],
+  });
+}

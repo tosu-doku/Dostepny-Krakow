@@ -19,6 +19,7 @@ import {
   LogIn,
   Eye,
   EyeOff,
+  Rocket,
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -32,6 +33,8 @@ interface ProfileViewProps {
   onPurgeComplete: (result: BadActorPurgeResult) => void;
   showDiscoveryGrid: boolean;
   onToggleDiscoveryGrid: () => void;
+  explorationModeEnabled: boolean;
+  onToggleExplorationMode: (enabled: boolean) => void;
 }
 
 export default function ProfileView({
@@ -45,6 +48,8 @@ export default function ProfileView({
   onPurgeComplete,
   showDiscoveryGrid,
   onToggleDiscoveryGrid,
+  explorationModeEnabled,
+  onToggleExplorationMode,
 }: ProfileViewProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isPurgeModalOpen, setIsPurgeModalOpen] = useState(false);
@@ -95,6 +100,98 @@ export default function ProfileView({
           <p className="text-sm text-slate-500">
             Zarządzaj kontem, preferencjami GPS i audytem
           </p>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TRYB EKSPLORACJI — big prominent card (persisted in localStorage)
+      ───────────────────────────────────────────────────────────────── */}
+      <div
+        className={`rounded-3xl border-2 shadow-sm overflow-hidden transition-all duration-300 ${
+          explorationModeEnabled
+            ? 'border-[#d90479] bg-gradient-to-br from-pink-50 via-white to-purple-50'
+            : 'border-slate-200/90 bg-white'
+        }`}
+      >
+        {/* Status badge strip */}
+        <div
+          className={`px-5 py-2 flex items-center justify-between ${
+            explorationModeEnabled ? 'bg-[#d90479]' : 'bg-slate-100'
+          }`}
+        >
+          <span className={`text-xs font-extrabold uppercase tracking-widest ${
+            explorationModeEnabled ? 'text-white' : 'text-slate-500'
+          }`}>
+            Tryb Eksploracji
+          </span>
+          <span className={`text-xs font-black px-3 py-0.5 rounded-full border ${
+            explorationModeEnabled
+              ? 'bg-white text-[#d90479] border-pink-200'
+              : 'bg-white text-slate-500 border-slate-200'
+          }`}>
+            {explorationModeEnabled ? '✓ AKTYWNY' : 'WYŁĄCZONY'}
+          </span>
+        </div>
+
+        {/* Card body */}
+        <div className="p-5 flex flex-col gap-4">
+          {/* Icon + Title + Description */}
+          <div className="flex items-start gap-4">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+              explorationModeEnabled
+                ? 'bg-[#d90479] text-white shadow-pink-400/30'
+                : 'bg-slate-100 text-slate-400'
+            }`}>
+              <Rocket className="w-7 h-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-black text-slate-900 leading-snug tracking-tight">
+                Tryb Eksploracji Krakowa
+              </h3>
+              <p className="text-sm text-slate-600 font-medium mt-1 leading-relaxed">
+                {explorationModeEnabled
+                  ? 'Misje dnia i znaczniki zadań są widoczne na mapie. Zbierasz podwójne XP!'
+                  : 'Włącz, aby widzieć zadania dzienne na mapie, zbierać 2× punkty XP i odkrywać heksagony Krakowa.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Feature list — visible only when active */}
+          {explorationModeEnabled && (
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {[
+                { icon: '🎯', label: 'Misje dnia na mapie' },
+                { icon: '⚡', label: 'Mnożnik 2× XP' },
+                { icon: '🗺️', label: 'Odkrywanie heksagonów' },
+                { icon: '🏆', label: 'Odznaki za misje' },
+              ].map(({ icon, label }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-2 p-2.5 bg-pink-50 rounded-2xl border border-pink-100"
+                >
+                  <span className="text-base leading-none">{icon}</span>
+                  <span className="font-bold text-slate-800">{label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Big Toggle Button */}
+          <button
+            type="button"
+            onClick={() => onToggleExplorationMode(!explorationModeEnabled)}
+            className={`w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-3 shadow-md transition-all active:scale-[0.98] cursor-pointer ${
+              explorationModeEnabled
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                : 'bg-[#d90479] hover:bg-[#be185d] text-white shadow-pink-500/30'
+            }`}
+            aria-pressed={explorationModeEnabled}
+          >
+            <Rocket className={`w-5 h-5 ${explorationModeEnabled ? 'text-slate-500' : 'text-white'}`} />
+            <span>
+              {explorationModeEnabled ? 'Wyłącz tryb eksploracji' : 'Włącz tryb eksploracji!'}
+            </span>
+          </button>
         </div>
       </div>
 

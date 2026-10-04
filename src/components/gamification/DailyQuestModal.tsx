@@ -2,24 +2,10 @@
 
 import React, { useEffect } from 'react';
 import { Camera, ChevronRight, Trophy, Sparkles } from 'lucide-react';
+import type { DailyQuest } from '@/types/gamification';
 
-export interface DailyQuest {
-  id: string;
-  title: string;
-  subtitle: string;
-  location: string;
-  distanceText: string;
-  currentChecks: number;
-  qualityStatus: string;
-  qualityNote: string;
-  progressCurrent: number;
-  progressTotal: number;
-  baseXp: number;
-  multiplier: number;
-  bonusBadge: string;
-  category: 'STAIRS' | 'EXPLORATION' | 'HIGH_KERB';
-  coordinates?: { lat: number; lng: number };
-}
+// Re-export for backwards-compatibility with components that import from here
+export type { DailyQuest };
 
 interface DailyQuestModalProps {
   quest: DailyQuest | null;

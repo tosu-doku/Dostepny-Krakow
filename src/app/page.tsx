@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { RouteResult, NavigationProfile } from '@/types/routing';
 import { Barrier } from '@/types/barrier';
+import { DailyQuest } from '@/types/gamification';
 import { User, BadActorPurgeResult } from '@/types/user';
 import RouteSearchCard from '@/components/navigation/RouteSearchCard';
 import TurnBanner from '@/components/navigation/TurnBanner';
@@ -13,6 +14,7 @@ import BottomNavigation, { ActiveMobileTab } from '@/components/layout/BottomNav
 import AddBarrierForm from '@/components/crowdsourcing/AddBarrierForm';
 import ProfileView from '@/components/profile/ProfileView';
 import DiscoveryBanner from '@/components/gamification/DiscoveryBanner';
+import DailyQuestModal from '@/components/gamification/DailyQuestModal';
 import { useDiscovery } from '@/hooks/useDiscovery';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
 import {
@@ -55,6 +57,50 @@ export default function Home() {
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pickingTarget, setPickingTarget] = useState<'start' | 'end' | null>(null);
   const [useCustomCoords, setUseCustomCoords] = useState(false);
+
+  // Exploration Mode — persisted in localStorage
+  const [explorationModeEnabled, setExplorationModeEnabled] = useState<boolean>(false);
+  const [selectedQuest, setSelectedQuest] = useState<DailyQuest | null>(null);
+
+  // Hydrate exploration mode from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('krakow_exploration_mode');
+      if (stored !== null) {
+        setExplorationModeEnabled(stored === 'true');
+      }
+    } catch {
+      // localStorage not available (SSR guard)
+    }
+  }, []);
+
+  const handleToggleExplorationMode = useCallback((enabled: boolean) => {
+    setExplorationModeEnabled(enabled);
+    try {
+      localStorage.setItem('krakow_exploration_mode', String(enabled));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // First daily quest used as the active map marker when exploration mode is on
+  const ACTIVE_QUEST: DailyQuest = {
+    id: 'quest-krowodrza-stairs',
+    title: 'Wejście do Parku Krakowskiego',
+    subtitle: 'Schody i nawierzchnia (Krowodrza)',
+    location: 'Krowodrza',
+    distanceText: '18 m od Ciebie',
+    currentChecks: 2,
+    qualityStatus: 'Bardzo słabo sprawdzone',
+    qualityNote: 'To miejsce ma mało aktualnych danych. Twoje zdjęcie będzie tu bardziej wartościowe.',
+    progressCurrent: 1,
+    progressTotal: 2,
+    baseXp: 100,
+    multiplier: 2,
+    bonusBadge: 'Premia za rzadkie miejsce',
+    category: 'STAIRS',
+    coordinates: { lat: 50.0685, lng: 19.9238 },
+  };
 
   // Gamification & Discovery Hook
   const {
@@ -300,20 +346,22 @@ export default function Home() {
                   </span>
                 </button>
 
-                {/* Nearby Daily Quest Indicator Pill (Matching rounded-full and height) */}
-                <button
-                  type="button"
-                  onClick={() => setMobileTab('leaderboard')}
-                  className="w-full min-h-[48px] px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-pink-200/90 text-slate-800 flex items-center justify-between text-sm font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99] hover:bg-pink-50/50"
-                >
-                  <span className="flex items-center gap-2 text-slate-900 truncate">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#d90479] animate-pulse shrink-0" />
-                    <span className="truncate">Misja dnia: Park Krakowski (Krowodrza)</span>
-                  </span>
-                  <span className="text-xs font-black px-3 py-1 rounded-full bg-pink-100 text-[#d90479] shrink-0 border border-pink-200">
-                    +200 XP • 2x
-                  </span>
-                </button>
+                {/* Nearby Daily Quest Indicator Pill — only visible when exploration mode is ON */}
+                {explorationModeEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQuest(ACTIVE_QUEST)}
+                    className="w-full min-h-[48px] px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-pink-200/90 text-slate-800 flex items-center justify-between text-sm font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99] hover:bg-pink-50/50"
+                  >
+                    <span className="flex items-center gap-2 text-slate-900 truncate">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#d90479] animate-pulse shrink-0" />
+                      <span className="truncate">Misja dnia: {ACTIVE_QUEST.title}</span>
+                    </span>
+                    <span className="text-xs font-black px-3 py-1 rounded-full bg-pink-100 text-[#d90479] shrink-0 border border-pink-200">
+                      +{ACTIVE_QUEST.baseXp * ACTIVE_QUEST.multiplier} XP • {ACTIVE_QUEST.multiplier}x
+                    </span>
+                  </button>
+                )}
               </>
             )}
 
@@ -340,6 +388,8 @@ export default function Home() {
               currentGpsCoords={currentGpsCoords}
               centerOnGpsTrigger={centerOnGpsTrigger}
               isLiveLocationActive={liveLocationEnabled}
+              activeQuest={explorationModeEnabled ? ACTIVE_QUEST : null}
+              onSelectQuest={(quest) => setSelectedQuest(quest)}
             />
           </div>
 
@@ -481,6 +531,8 @@ export default function Home() {
             onPurgeComplete={handlePurgeComplete}
             showDiscoveryGrid={showDiscoveryGrid}
             onToggleDiscoveryGrid={toggleDiscoveryGrid}
+            explorationModeEnabled={explorationModeEnabled}
+            onToggleExplorationMode={handleToggleExplorationMode}
           />
         </div>
 
@@ -495,6 +547,18 @@ export default function Home() {
           }}
         />
       </div>
+
+      {/* Global Daily Quest Modal — triggered from map marker or quest pill */}
+      <DailyQuestModal
+        quest={selectedQuest}
+        isOpen={!!selectedQuest}
+        onClose={() => setSelectedQuest(null)}
+        onActionClick={(quest) => {
+          setSelectedQuest(null);
+          if (quest.coordinates) setPickedLocation(quest.coordinates);
+          setMobileTab('crowdsource');
+        }}
+      />
     </div>
   );
 }

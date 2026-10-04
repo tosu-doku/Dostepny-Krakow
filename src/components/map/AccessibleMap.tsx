@@ -5,6 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Plus, Minus, LocateFixed } from 'lucide-react';
 import { Barrier } from '@/types/barrier';
+import { DailyQuest } from '@/types/gamification';
 import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary, routeToTiles } from '@/services/grid';
 import {
   createStartIcon,
@@ -13,6 +14,7 @@ import {
   createUserGpsIcon,
   createBarrierIcon,
   createBarrierPopupHtml,
+  createQuestMarkerIcon,
 } from './mapIcons';
 
 interface AccessibleMapProps {
@@ -30,6 +32,10 @@ interface AccessibleMapProps {
   currentGpsCoords?: { lat: number; lng: number } | null;
   centerOnGpsTrigger?: number;
   isLiveLocationActive?: boolean;
+  /** When set, renders a prominent magenta quest marker at the quest's coordinates */
+  activeQuest?: DailyQuest | null;
+  /** Called when the user taps the quest marker */
+  onSelectQuest?: (quest: DailyQuest) => void;
 }
 
 export default function AccessibleMap({
@@ -47,6 +53,8 @@ export default function AccessibleMap({
   currentGpsCoords = null,
   centerOnGpsTrigger = 0,
   isLiveLocationActive = false,
+  activeQuest = null,
+  onSelectQuest,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -67,11 +75,17 @@ export default function AccessibleMap({
     onTileClickRef.current = onTileClick;
   }, [onTileClick]);
 
+  const onSelectQuestRef = useRef(onSelectQuest);
+  useEffect(() => {
+    onSelectQuestRef.current = onSelectQuest;
+  }, [onSelectQuest]);
+
   // Dedicated layer groups for clean, crash-free Leaflet updates
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const discoveryLayerRef = useRef<L.LayerGroup | null>(null);
   const userGpsLayerRef = useRef<L.LayerGroup | null>(null);
+  const questLayerRef = useRef<L.LayerGroup | null>(null);
   const prevRouteKeyRef = useRef<string>('');
 
   // 1. Initialize Map ONCE
@@ -106,6 +120,7 @@ export default function AccessibleMap({
     markersLayerRef.current = L.layerGroup().addTo(map);
     discoveryLayerRef.current = L.layerGroup().addTo(map);
     userGpsLayerRef.current = L.layerGroup().addTo(map);
+    questLayerRef.current = L.layerGroup().addTo(map);
 
     map.on('click', (e: L.LeafletMouseEvent) => {
       if (onMapClickRef.current) {
@@ -342,6 +357,42 @@ export default function AccessibleMap({
       console.warn('Auto-center on GPS warning:', err);
     }
   }, [centerOnGpsTrigger, currentGpsCoords]);
+
+  // 6. Render Daily Quest Marker (visible only when exploration mode is enabled & activeQuest is set)
+  useEffect(() => {
+    const layer = questLayerRef.current;
+    if (!layer) return;
+
+    layer.clearLayers();
+
+    if (!activeQuest?.coordinates) return;
+
+    const xpReward = activeQuest.baseXp * activeQuest.multiplier;
+    const marker = L.marker(
+      [activeQuest.coordinates.lat, activeQuest.coordinates.lng],
+      {
+        icon: createQuestMarkerIcon(xpReward),
+        zIndexOffset: 2000,
+        title: `Misja: ${activeQuest.title}`,
+      }
+    ).bindPopup(
+      `<div style="font-family:sans-serif;min-width:180px;">
+        <div style="color:#d90479;font-weight:900;font-size:13px;margin-bottom:4px;">🎯 Misja Dnia</div>
+        <div style="font-weight:bold;font-size:13px;color:#111;margin-bottom:2px;">${activeQuest.title}</div>
+        <div style="font-size:11px;color:#555;">${activeQuest.subtitle}</div>
+        <div style="margin-top:6px;background:#fff1f7;border:1px solid #fecdd3;border-radius:8px;padding:6px 8px;font-size:12px;font-weight:700;color:#d90479;">+${xpReward} XP • ${activeQuest.multiplier}x Multiplier</div>
+        <div style="margin-top:6px;font-size:11px;color:#d90479;font-weight:700;cursor:pointer;" onclick="this.closest('.leaflet-popup').dispatchEvent(new Event('questclick',{bubbles:true}))">Kliknij znacznik, aby zobaczyć szczegóły →</div>
+      </div>`
+    );
+
+    marker.on('click', () => {
+      if (onSelectQuestRef.current) {
+        onSelectQuestRef.current(activeQuest);
+      }
+    });
+
+    marker.addTo(layer);
+  }, [activeQuest]);
 
   const handleZoomIn = () => {
     mapInstanceRef.current?.zoomIn();
