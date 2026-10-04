@@ -70,6 +70,8 @@ export function calculateRealisticDurationSeconds(
       baseSeconds += profile === 'wheelchair' ? 40 : 15;
     } else if (b.barrier_type === 'ELEVATOR_OUT_OF_ORDER') {
       baseSeconds += 120;
+    } else if (b.barrier_type === 'COBBLESTONE_SURFACE') {
+      baseSeconds += profile === 'wheelchair' ? 45 : profile === 'stroller' ? 25 : 10;
     } else {
       baseSeconds += 20;
     }
@@ -405,7 +407,8 @@ export async function calculateAccessibleRoute(
           return (
             (b.barrier_type === 'STAIRS' && !b.details.has_ramp) ||
             b.barrier_type === 'ELEVATOR_OUT_OF_ORDER' ||
-            (b.barrier_type === 'HIGH_KERB' && (b.details.height_cm || 0) > 4)
+            (b.barrier_type === 'HIGH_KERB' && (b.details.height_cm || 0) > 4) ||
+            (b.barrier_type === 'COBBLESTONE_SURFACE' && (b.details.smoothness === 'bad' || b.details.smoothness === 'very_bad' || b.details.surface === 'unhewn_cobblestone'))
           );
         }
         if (profile === 'visually_impaired') {

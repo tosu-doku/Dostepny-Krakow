@@ -126,33 +126,46 @@ export default function RouteTimelineSheet({
         {barriers.map((b, idx) => {
           const isStairs = b.barrier_type === 'STAIRS';
           const isKerb = b.barrier_type === 'HIGH_KERB';
+          const isCobblestone = b.barrier_type === 'COBBLESTONE_SURFACE';
           const isRamp = b.details?.has_ramp === true || b.barrier_type === 'STEEP_INCLINE';
 
           // Estimated distance along route (distributed along total distance)
           const distanceMeters = Math.round(((idx + 1) / (barriers.length + 1)) * route.total_distance_meters);
 
           let nodeBg = 'bg-amber-500';
-          let nodeIcon = <AlertTriangle className="w-3.5 h-3.5" />;
+          let nodeIcon: React.ReactNode = <AlertTriangle className="w-3.5 h-3.5" />;
           let title = b.address_description || b.barrier_type;
           let description = 'Zachowaj ostrożność na tym odcinku.';
 
-          if (isRamp) {
+          if (isCobblestone) {
+            nodeBg = 'bg-amber-600';
+            nodeIcon = <span className="text-xs">🏛️</span>;
+            const sType = b.details?.surface_label || b.details?.surface || 'kostka brukowa';
+            title = b.details?.name ? `${b.details.name} (${sType})` : `Nawierzchnia: ${sType}`;
+            description = b.details?.smoothness
+              ? `Bruk kamienny (gładkość: ${b.details.smoothness}). Silne wstrząsy dla wózków.`
+              : 'Kostka brukowa – wstrząsy i opór toczenia dla wózków inwalidzkich i dziecięcych.';
+          } else if (isRamp) {
             nodeBg = 'bg-emerald-600';
             nodeIcon = <CheckCircle2 className="w-3.5 h-3.5" />;
-            title = 'Podjazd / Rampa';
+            title = b.address_description || 'Podjazd / Rampa';
             description = 'Łagodny podjazd, ułatwiony przejazd dla wózków.';
           } else if (isKerb) {
             nodeBg = 'bg-amber-500';
             nodeIcon = <AlertTriangle className="w-3.5 h-3.5" />;
             const height = b.details?.height_cm ? `${b.details.height_cm} cm` : 'krawężnik';
             title = `Wysoki krawężnik: ${height}`;
-            description = `${b.address_description || 'Przejście dla pieszych'}. Zweryfikowane przez społeczność.`;
+            description = `${b.address_description || 'Przejście dla pieszych'}. Zweryfikowane dane miejskie.`;
           } else if (isStairs) {
-            nodeBg = 'bg-red-500';
+            const hasRamp = b.details?.has_ramp;
+            nodeBg = hasRamp ? 'bg-amber-600' : 'bg-red-500';
             nodeIcon = <AlertTriangle className="w-3.5 h-3.5" />;
-            const steps = b.details?.step_count ? `${b.details.step_count} stopni` : 'schody';
-            title = `Schody (${steps})`;
-            description = b.details?.has_ramp ? 'Dostępny podjazd obok schodów.' : 'Brak rampy – zalecana asysta.';
+            const steps = b.details?.step_count ? `${b.details.step_count} stopni` : 'schody terenowe';
+            title = b.address_description || `Schody (${steps})`;
+            const rampDesc = hasRamp ? '✓ Dostępny podjazd obok schodów.' : '✗ Brak podjazdu – nieprzejezdne dla wózka.';
+            const handrailDesc = b.details?.has_handrail ? ' Poręcz zamontowana.' : '';
+            const tactileDesc = b.details?.tactile_paving ? ' Płyty dotykowe dla niewidomych.' : '';
+            description = `${rampDesc}${handrailDesc}${tactileDesc}`;
           }
 
           return (

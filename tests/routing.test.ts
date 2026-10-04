@@ -91,5 +91,29 @@ describe('Routing & Accessibility Service', () => {
       // STAIRS adds +120s, HIGH_KERB adds +40s => total +160s
       expect(penalizedDuration).toBe(baseDuration + 160);
     });
+
+    it('adds realistic vibration and rolling delay for wheelchair on cobblestone surfaces', () => {
+      const distance = 400;
+      const cobblestoneBarrier: Barrier = {
+        id: 'cobble-1',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        barrier_type: 'COBBLESTONE_SURFACE',
+        location: undefined,
+        latitude: 50.0614,
+        longitude: 19.9365,
+        details: { surface: 'sett', smoothness: 'intermediate' },
+        source: 'OSM',
+        status: 'VERIFIED',
+        confidence_score: 0.95,
+        last_verified_at: new Date().toISOString(),
+      };
+
+      const baseDuration = calculateRealisticDurationSeconds(distance, 'wheelchair', []);
+      const penalizedDuration = calculateRealisticDurationSeconds(distance, 'wheelchair', [cobblestoneBarrier]);
+
+      // COBBLESTONE_SURFACE adds +45s for wheelchair
+      expect(penalizedDuration).toBe(baseDuration + 45);
+    });
   });
 });

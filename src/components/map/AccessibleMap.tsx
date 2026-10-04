@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Plus, Minus, LocateFixed } from 'lucide-react';
+import { Plus, Minus, LocateFixed, Layers } from 'lucide-react';
 import { Barrier } from '@/types/barrier';
 import { DailyQuest } from '@/types/gamification';
 import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary, routeToTiles } from '@/services/grid';
@@ -36,6 +36,8 @@ interface AccessibleMapProps {
   activeQuest?: DailyQuest | null;
   /** Called when the user taps the quest marker */
   onSelectQuest?: (quest: DailyQuest) => void;
+  /** Controls visibility of historic cobblestone street and plaza surfaces overlay */
+  showSurfacesLayer?: boolean;
 }
 
 export default function AccessibleMap({
@@ -55,6 +57,7 @@ export default function AccessibleMap({
   isLiveLocationActive = false,
   activeQuest = null,
   onSelectQuest,
+  showSurfacesLayer = true,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -86,7 +89,15 @@ export default function AccessibleMap({
   const discoveryLayerRef = useRef<L.LayerGroup | null>(null);
   const userGpsLayerRef = useRef<L.LayerGroup | null>(null);
   const questLayerRef = useRef<L.LayerGroup | null>(null);
+  const surfacesLayerRef = useRef<L.GeoJSON | null>(null);
+  const surfacesDataRef = useRef<any>(null);
   const prevRouteKeyRef = useRef<string>('');
+
+  const [showSurfaces, setShowSurfaces] = useState<boolean>(showSurfacesLayer);
+
+  useEffect(() => {
+    setShowSurfaces(showSurfacesLayer);
+  }, [showSurfacesLayer]);
 
   // 1. Initialize Map ONCE
   useEffect(() => {
@@ -116,6 +127,58 @@ export default function AccessibleMap({
     }).addTo(map);
 
     // Create persistent layer groups
+    // Surfaces layer on bottom so route and markers are drawn on top
+    surfacesLayerRef.current = L.geoJSON(null, {
+      style: (feature) => {
+        const isPolygon = feature?.geometry?.type === 'Polygon' || feature?.geometry?.type === 'MultiPolygon';
+        const surface = feature?.properties?.surface || 'sett';
+        const isSett = surface === 'sett';
+        return isPolygon
+          ? {
+              color: isSett ? '#b45309' : '#9a3412',
+              weight: 1.5,
+              dashArray: '3, 4',
+              fillColor: isSett ? '#d97706' : '#c2410c',
+              fillOpacity: 0.32,
+            }
+          : {
+              color: isSett ? '#d97706' : '#ea580c',
+              weight: 5,
+              opacity: 0.70,
+              dashArray: '4, 6',
+              lineCap: 'round',
+              lineJoin: 'round',
+            };
+      },
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties || {};
+        const surfaceName =
+          p.surface === 'sett'
+            ? 'Kostka rzędowa (sett)'
+            : p.surface === 'cobblestone'
+            ? 'Kocie łby (cobblestone)'
+            : 'Bruk kamienny';
+
+        layer.bindPopup(`
+          <div style="font-family: inherit; font-size: 13px; line-height: 1.4; min-width: 190px;">
+            <div style="display:inline-block; font-size:10px; font-weight:800; color:#b45309; background:#fef3c7; padding:2px 7px; border-radius:9999px; margin-bottom:4px;">
+              🏛️ Nawierzchnia z kostki brukowej
+            </div>
+            <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">
+              ${p.name || 'Odcinek brukowany'}
+            </div>
+            <div style="font-size: 12px; color: #475569;">
+              Typ: <strong>${surfaceName}</strong>
+            </div>
+            ${p.smoothness ? `<div style="font-size: 11px; color: #92400e; margin-top:2px;">Gładkość: <strong>${p.smoothness}</strong></div>` : ''}
+            <div style="margin-top: 6px; background: #fff7ed; border: 1px solid #ffedd5; border-radius: 8px; padding: 6px; font-size: 11px; color: #9a3412; font-weight: 600;">
+              ⚠️ Utrudnienie: drgania dla wózków inwalidzkich i dziecięcych
+            </div>
+          </div>
+        `);
+      },
+    }).addTo(map);
+
     routeLayerRef.current = L.layerGroup().addTo(map);
     markersLayerRef.current = L.layerGroup().addTo(map);
     discoveryLayerRef.current = L.layerGroup().addTo(map);
@@ -394,6 +457,54 @@ export default function AccessibleMap({
     marker.addTo(layer);
   }, [activeQuest]);
 
+  // 7. Load and populate cobblestone surfaces GeoJSON
+  useEffect(() => {
+    let isCancelled = false;
+    async function loadSurfaces() {
+      if (surfacesDataRef.current) {
+        if (surfacesLayerRef.current && surfacesLayerRef.current.getLayers().length === 0) {
+          surfacesLayerRef.current.addData(surfacesDataRef.current);
+        }
+        return;
+      }
+      try {
+        const res = await fetch('/api/surfaces');
+        if (res.ok) {
+          const geojson = await res.json();
+          if (!isCancelled) {
+            surfacesDataRef.current = geojson;
+            if (surfacesLayerRef.current) {
+              surfacesLayerRef.current.addData(geojson);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load surfaces GeoJSON:', err);
+      }
+    }
+    loadSurfaces();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  // 8. Toggle cobblestone surfaces layer visibility on map
+  useEffect(() => {
+    const layer = surfacesLayerRef.current;
+    const map = mapInstanceRef.current;
+    if (!layer || !map) return;
+
+    if (showSurfaces) {
+      if (!map.hasLayer(layer)) {
+        map.addLayer(layer);
+      }
+    } else {
+      if (map.hasLayer(layer)) {
+        map.removeLayer(layer);
+      }
+    }
+  }, [showSurfaces]);
+
   const handleZoomIn = () => {
     mapInstanceRef.current?.zoomIn();
   };
@@ -461,6 +572,21 @@ export default function AccessibleMap({
           {currentGpsCoords && (
             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
           )}
+        </button>
+
+        {/* Toggle Cobblestone Surfaces Layer Button */}
+        <button
+          type="button"
+          onClick={() => setShowSurfaces((prev) => !prev)}
+          aria-label={showSurfaces ? 'Ukryj obszary brukowane na mapie' : 'Pokaż obszary brukowane na mapie'}
+          title={showSurfaces ? 'Nawierzchnie z bruku: Włączone' : 'Nawierzchnie z bruku: Wyłączone'}
+          className={`w-11 h-11 backdrop-blur-md rounded-2xl shadow-xl border flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/40 relative ${
+            showSurfaces
+              ? 'bg-amber-500 text-white border-amber-600 shadow-amber-500/25 ring-2 ring-amber-400/40'
+              : 'bg-white/95 text-slate-700 border-slate-200/90 hover:text-amber-600 hover:bg-slate-50 active:bg-slate-100'
+          }`}
+        >
+          <Layers className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
     </div>

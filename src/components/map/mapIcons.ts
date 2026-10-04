@@ -60,14 +60,21 @@ export function createUserGpsIcon(): L.DivIcon {
 export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
   const isStairs = barrier.barrier_type === 'STAIRS';
   const isKerb = barrier.barrier_type === 'HIGH_KERB';
+  const isCobblestone = barrier.barrier_type === 'COBBLESTONE_SURFACE';
   const isRamp = barrier.details?.has_ramp === true || barrier.barrier_type === 'STEEP_INCLINE';
 
   let bg = '#f59e0b';
   let text = '#0f172a';
   let icon = '⚠️';
-  let label = barrier.address_description?.slice(0, 18) || barrier.barrier_type;
+  let label = barrier.address_description?.slice(0, 24) || barrier.barrier_type;
 
-  if (isRamp) {
+  if (isCobblestone) {
+    bg = '#d97706';
+    text = '#ffffff';
+    icon = '🏛️';
+    const sType = barrier.details?.surface || 'bruk';
+    label = barrier.details?.name ? `${barrier.details.name} (${sType})` : `Bruk (${sType})`;
+  } else if (isRamp) {
     bg = '#16a34a';
     text = '#ffffff';
     icon = '✓';
@@ -79,11 +86,11 @@ export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
     const height = barrier.details?.height_cm ? `${barrier.details.height_cm} cm` : '';
     label = `Krawężnik ${height}`.trim();
   } else if (isStairs) {
-    bg = '#f59e0b';
-    text = '#0f172a';
+    bg = '#ea580c';
+    text = '#ffffff';
     icon = '⚠️';
     const steps = barrier.details?.step_count ? `${barrier.details.step_count} st.` : 'Schody';
-    label = steps;
+    label = barrier.details?.has_ramp ? `${steps} (rampa)` : steps;
   }
 
   return L.divIcon({
@@ -96,12 +103,12 @@ export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
         background-color:${bg};
         color:${text};
         font-size:11px;
-        font-weight:700;
+        font-weight:800;
         padding:4px 10px;
         border-radius:9999px;
         white-space:nowrap;
-        box-shadow:0 3px 8px rgba(0,0,0,0.18);
-        border:1.5px solid rgba(255,255,255,0.9);
+        box-shadow:0 3px 8px rgba(0,0,0,0.22);
+        border:1.5px solid rgba(255,255,255,0.95);
         pointer-events:auto;
         cursor:pointer;
         transform:translate(-50%, -50%);
@@ -123,13 +130,81 @@ export function createBarrierIcon(barrier: Barrier): L.DivIcon {
 }
 
 /**
- * Builds HTML popup markup for an architectural barrier.
+ * Builds HTML popup markup for an architectural barrier displaying all rich GeoJSON parameters.
  */
 export function createBarrierPopupHtml(barrier: Barrier): string {
-  const detailsStr = Object.entries(barrier.details || {})
-    .filter(([k]) => k !== 'images' && k !== 'original_links')
-    .map(([k, v]) => `<li><strong>${k}:</strong> ${v}</li>`)
-    .join('');
+  const isStairs = barrier.barrier_type === 'STAIRS';
+  const isCobblestone = barrier.barrier_type === 'COBBLESTONE_SURFACE';
+  const isKerb = barrier.barrier_type === 'HIGH_KERB';
+
+  let titleBadge = '⚠️ Utrudnienie architektoniczne';
+  let titleColor = '#d97706';
+  let badgeBg = '#fef3c7';
+
+  if (isStairs) {
+    titleBadge = '🪜 Schody terenowe';
+    titleColor = '#ea580c';
+    badgeBg = '#ffedd5';
+  } else if (isCobblestone) {
+    titleBadge = '🏛️ Nawierzchnia z kostki brukowej';
+    titleColor = '#b45309';
+    badgeBg = '#fef3c7';
+  } else if (isKerb) {
+    titleBadge = '⚠️ Wysoki krawężnik';
+    titleColor = '#ca8a04';
+    badgeBg = '#fef9c3';
+  }
+
+  const items: string[] = [];
+
+  if (isStairs) {
+    if (barrier.details?.step_count) {
+      items.push(`<li><strong>Liczba stopni:</strong> ${barrier.details.step_count} st.</li>`);
+    }
+    items.push(
+      `<li><strong>Podjazd dla wózków:</strong> ${
+        barrier.details?.has_ramp
+          ? '<span style="color:#16a34a;font-weight:bold;">✓ Dostępny (' + (barrier.details.ramp_type || 'rampa') + ')</span>'
+          : '<span style="color:#dc2626;font-weight:bold;">✗ Brak podjazdu</span>'
+      }</li>`
+    );
+    items.push(
+      `<li><strong>Poręcz:</strong> ${
+        barrier.details?.has_handrail
+          ? '<span style="color:#16a34a;font-weight:bold;">✓ Zamontowana</span>'
+          : '<span style="color:#64748b;">✗ Brak poręczy</span>'
+      }</li>`
+    );
+    items.push(
+      `<li><strong>Płyty dotykowe (niewidomi):</strong> ${
+        barrier.details?.tactile_paving
+          ? '<span style="color:#16a34a;font-weight:bold;">✓ Oznaczenia fakturowe</span>'
+          : '<span style="color:#64748b;">✗ Brak oznaczeń</span>'
+      }</li>`
+    );
+    if (barrier.details?.surface) {
+      items.push(`<li><strong>Nawierzchnia schodów:</strong> ${barrier.details.surface}</li>`);
+    }
+    if (barrier.details?.incline) {
+      items.push(`<li><strong>Kierunek:</strong> ${barrier.details.incline}</li>`);
+    }
+    if (barrier.details?.width) {
+      items.push(`<li><strong>Szerokość:</strong> ${barrier.details.width} m</li>`);
+    }
+  } else if (isCobblestone) {
+    items.push(`<li><strong>Rodzaj bruku:</strong> ${barrier.details?.surface_label || barrier.details?.surface || 'Kostka brukowa'}</li>`);
+    if (barrier.details?.smoothness) {
+      items.push(`<li><strong>Gładkość nawierzchni:</strong> ${barrier.details.smoothness}</li>`);
+    }
+    items.push(`<li><strong>Wpływ na mobilność:</strong> <span style="color:#b45309;font-weight:bold;">Silne drgania dla wózków inwalidzkich i dziecięcych</span></li>`);
+    if (barrier.details?.highway) {
+      items.push(`<li><strong>Klasa drogi:</strong> ${barrier.details.highway}</li>`);
+    }
+  } else {
+    Object.entries(barrier.details || {})
+      .filter(([k]) => k !== 'images' && k !== 'original_links' && k !== 'geometry')
+      .forEach(([k, v]) => items.push(`<li><strong>${k}:</strong> ${v}</li>`));
+  }
 
   const hasImages =
     (barrier.details?.images &&
@@ -137,22 +212,27 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
       barrier.details.images.length > 0) ||
     !!barrier.image_url;
   const photoBadge = hasImages
-    ? '<div style="margin-top:4px;color:#2563eb;font-weight:bold;font-size:11px;">📷 Dostępne zdjęcia w panelu</div>'
+    ? '<div style="margin-top:6px;color:#2563eb;font-weight:bold;font-size:11px;">📷 Dostępne zdjęcia w panelu</div>'
     : '';
 
+  const sourceLabel = barrier.source === 'OSM' ? 'OpenStreetMap (dane miejskie Krakowa)' : barrier.source;
+
   return `
-    <div style="min-width: 200px; font-family: sans-serif; font-size: 13px;">
-      <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: bold; color: #111;">
-        ${barrier.barrier_type}
+    <div style="min-width: 230px; font-family: sans-serif; font-size: 13px; line-height: 1.4;">
+      <div style="display:inline-block; font-size:11px; font-weight:800; color:${titleColor}; background:${badgeBg}; padding:2px 8px; border-radius:9999px; margin-bottom:4px;">
+        ${titleBadge}
+      </div>
+      <h3 style="margin: 2px 0 6px 0; font-size: 14px; font-weight: 800; color: #0f172a;">
+        ${barrier.address_description || 'Utrudnienie w Krakowie'}
       </h3>
-      <p style="margin: 0 0 6px 0; color: #444;">${barrier.address_description || 'Brak opisu adresu'}</p>
-      <ul style="margin: 0 0 6px 0; padding-left: 16px; color: #333;">
-        ${detailsStr}
+      <ul style="margin: 0 0 6px 0; padding-left: 18px; color: #334155; font-size: 12px;">
+        ${items.join('')}
       </ul>
       ${photoBadge}
-      <div style="font-size: 11px; color: #666; border-top: 1px solid #eee; padding-top: 4px; margin-top: 4px;">
-        <div><strong>Źródło:</strong> ${barrier.source}</div>
+      <div style="font-size: 11px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px; display:flex; flex-direction:column; gap:2px;">
+        <div><strong>Źródło:</strong> ${sourceLabel}</div>
         <div><strong>Wiarygodność:</strong> ${(barrier.confidence_score * 100).toFixed(0)}% (${barrier.status})</div>
+        ${barrier.details?.osm_id ? `<div style="color:#94a3b8;font-size:10px;">OSM: ${barrier.details.osm_id}</div>` : ''}
       </div>
     </div>
   `;
