@@ -45,7 +45,6 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Map state
   const [startPoint, setStartPoint] = useState<{ lat: number; lng: number } | null>({
     lat: 50.0664,
     lng: 19.9482,
@@ -54,6 +53,8 @@ export default function Home() {
     lat: 50.0614,
     lng: 19.9365,
   });
+  const [startName, setStartName] = useState<string>('Dworzec Główny (Kraków)');
+  const [endName, setEndName] = useState<string>('Rynek Główny (Sukiennice)');
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pickingTarget, setPickingTarget] = useState<'start' | 'end' | null>(null);
   const [useCustomCoords, setUseCustomCoords] = useState(false);
@@ -169,12 +170,16 @@ export default function Home() {
   const handleSearchRoute = async (
     start: { lat: number; lng: number },
     end: { lat: number; lng: number },
-    profile: NavigationProfile
+    profile: NavigationProfile,
+    startLabel?: string,
+    endLabel?: string
   ) => {
     setIsLoadingRoute(true);
     setErrorMessage(null);
     setStartPoint(start);
     setEndPoint(end);
+    if (startLabel) setStartName(startLabel);
+    if (endLabel) setEndName(endLabel);
 
     try {
       const res = await fetch('/api/route', {
@@ -211,10 +216,10 @@ export default function Home() {
       fetchBarriers();
       fetchDiscoveryTiles();
       if (startPoint && endPoint) {
-        handleSearchRoute(startPoint, endPoint, route?.profile || 'foot_walking');
+        handleSearchRoute(startPoint, endPoint, route?.profile || 'foot_walking', startName, endName);
       }
     },
-    [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile]
+    [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile, startName, endName]
   );
 
   // Handle Map Click
@@ -230,14 +235,17 @@ export default function Home() {
 
         if (pickingTarget === 'start') {
           setStartPoint(coords);
+          setStartName(`Współrzędne (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
           setPickingTarget(null);
           setMobileTab('route');
         } else if (pickingTarget === 'end') {
           setEndPoint(coords);
+          setEndName(`Współrzędne (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
           setPickingTarget(null);
           setMobileTab('route');
         } else {
           setEndPoint(coords);
+          setEndName(`Współrzędne (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`);
         }
       }
     },
@@ -323,7 +331,11 @@ export default function Home() {
               <>
                 {/* Top Turn-by-Turn Banner (Attachment 2) */}
                 <div className="pointer-events-auto">
-                  <TurnBanner currentStep={route.steps?.[0]} />
+                  <TurnBanner
+                    currentStep={route.steps?.[0]}
+                    startName={startName}
+                    endName={endName}
+                  />
                 </div>
 
                 {/* Floating Stat Cards (Attachment 2) */}
@@ -378,6 +390,8 @@ export default function Home() {
             <AccessibleMap
               start={startPoint}
               end={endPoint}
+              startName={startName}
+              endName={endName}
               routeCoordinates={route?.geometry?.coordinates || []}
               barriers={route?.all_barriers || []}
               selectedLocation={mobileTab === 'crowdsource' ? pickedLocation : null}
@@ -450,13 +464,21 @@ export default function Home() {
               </div>
 
               {/* Attachment 2 Bottom Sheet Component */}
-              <RouteTimelineSheet route={route} />
+              <RouteTimelineSheet
+                route={route}
+                startName={startName}
+                endName={endName}
+              />
             </div>
           ) : (
             /* Route Inactive: Show "Utwórz trasę" Card (Attachment 3) */
             <RouteSearchCard
               startPoint={startPoint}
               endPoint={endPoint}
+              startName={startName}
+              endName={endName}
+              onSetStartName={setStartName}
+              onSetEndName={setEndName}
               onSetStartPoint={setStartPoint}
               onSetEndPoint={setEndPoint}
               pickingTarget={pickingTarget}

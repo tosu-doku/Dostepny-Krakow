@@ -17,11 +17,15 @@ import BarrierImageGallery from '../common/BarrierImageGallery';
 
 interface RouteTimelineSheetProps {
   route: RouteResult;
+  startName?: string;
+  endName?: string;
   onSelectBarrier?: (barrier: Barrier) => void;
 }
 
 export default function RouteTimelineSheet({
   route,
+  startName,
+  endName,
   onSelectBarrier,
 }: RouteTimelineSheetProps) {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
@@ -112,12 +116,12 @@ export default function RouteTimelineSheet({
 
           {/* Content */}
           <div className="flex-1 min-w-0 pb-6 pt-0.5">
-            <div className="text-xs font-black text-slate-500">0 m</div>
+            <div className="text-xs font-black text-slate-500">0 m • START</div>
             <div className="font-black text-base text-slate-900 leading-snug">
-              Start: {route.steps?.[0]?.instruction || 'Początek trasy'}
+              Start: {startName || 'Początek trasy'}
             </div>
             <p className="text-sm text-slate-600 mt-0.5 leading-relaxed font-medium">
-              Równy, utwardzony chodnik. Rozpoczęcie wyznaczonego odcinka.
+              {route.steps?.[0]?.instruction || 'Równy, utwardzony chodnik. Rozpoczęcie wyznaczonego odcinka.'}
             </p>
           </div>
         </div>
@@ -212,13 +216,13 @@ export default function RouteTimelineSheet({
           {/* Content */}
           <div className="flex-1 min-w-0 pt-0.5">
             <div className="text-xs font-black text-slate-500">
-              {Math.round(route.total_distance_meters)} m
+              {Math.round(route.total_distance_meters)} m • CEL
             </div>
             <div className="font-black text-base text-slate-900 leading-snug">
-              Cel: {route.steps?.[route.steps.length - 1]?.instruction || 'Punkt docelowy'}
+              Cel: {endName || 'Punkt docelowy'}
             </div>
             <p className="text-sm text-slate-600 mt-0.5 leading-relaxed font-medium">
-              Koniec trasy bez barier.
+              Koniec trasy bez barier. Dotarcie do wyznaczonego miejsca docelowego.
             </p>
           </div>
         </div>

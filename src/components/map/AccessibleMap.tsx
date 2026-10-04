@@ -38,6 +38,8 @@ interface AccessibleMapProps {
   onSelectQuest?: (quest: DailyQuest) => void;
   /** Controls visibility of historic cobblestone street and plaza surfaces overlay */
   showSurfacesLayer?: boolean;
+  startName?: string;
+  endName?: string;
 }
 
 export default function AccessibleMap({
@@ -58,6 +60,8 @@ export default function AccessibleMap({
   activeQuest = null,
   onSelectQuest,
   showSurfacesLayer = true,
+  startName,
+  endName,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -264,16 +268,26 @@ export default function AccessibleMap({
 
     // Add Start Marker (A)
     if (start) {
-      L.marker([start.lat, start.lng], { icon: createStartIcon(), title: 'Punkt Startowy (A)' })
+      L.marker([start.lat, start.lng], { icon: createStartIcon(), title: `Start (A): ${startName || 'Punkt startowy'}` })
         .addTo(markersLayer)
-        .bindPopup('<strong>Punkt startowy (A)</strong>');
+        .bindPopup(
+          `<div style="font-family:inherit;font-size:13px;line-height:1.4;">
+            <div style="font-size:10px;font-weight:800;color:#0284c7;text-transform:uppercase;">Punkt startowy (A)</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a;margin-top:2px;">${startName || 'Początek trasy'}</div>
+          </div>`
+        );
     }
 
     // Add End Marker (B)
     if (end) {
-      L.marker([end.lat, end.lng], { icon: createEndIcon(), title: 'Punkt Docelowy (B)' })
+      L.marker([end.lat, end.lng], { icon: createEndIcon(), title: `Cel (B): ${endName || 'Punkt docelowy'}` })
         .addTo(markersLayer)
-        .bindPopup('<strong>Punkt docelowy (B)</strong>');
+        .bindPopup(
+          `<div style="font-family:inherit;font-size:13px;line-height:1.4;">
+            <div style="font-size:10px;font-weight:800;color:#dc2626;text-transform:uppercase;">Punkt docelowy (B)</div>
+            <div style="font-size:14px;font-weight:800;color:#0f172a;margin-top:2px;">${endName || 'Cel trasy'}</div>
+          </div>`
+        );
     }
 
     // Add Selected / Picked Marker
@@ -357,7 +371,7 @@ export default function AccessibleMap({
         console.warn('fitBounds warning:', err);
       }
     }
-  }, [start, end, routeCoordinates, barriers, selectedLocation]);
+  }, [start, end, routeCoordinates, barriers, selectedLocation, startName, endName]);
 
   // 3. Update Fog of War / Exploration Grid Layer
   useEffect(() => {
