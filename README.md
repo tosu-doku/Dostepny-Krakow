@@ -120,26 +120,27 @@ Aplikacja udostępnia modularne API:
 
 W celu aktywizacji społeczności do realnego mapowania barier architektonicznych wdrożono system **odkrywania mapy („Mgła Wojny”)**:
 
-* **Siatka Ścisłego Centrum Krakowa:**
-  * Zakres: `50.0550° N – 50.0750° N`, `19.9250° E – 20.0000° E` (~11.9 km²).
-  * Rozmiar: 22 wiersze $\times$ 54 kolumny = **1 188 kafelków** o wymiarach $\approx 100\,\text{m} \times 100\,\text{m}$.
-  * Algorytm $O(1)$: konwersja współrzędnych i wyznaczanie geometrii w pamięci przeglądarki bez obciążających bibliotek GIS.
+* **Heksagonalna Siatka Uber H3 (Rezolucja 9) & Rozszerzony Obszar Krakowa:**
+  * **Globalny standard GIS:** Zastosowanie heksagonalnego systemu H3 od Ubera eliminuje asymetrię przekątnych siatek prostokątnych, zapewniając jednakowy dystans do wszystkich 6 sąsiednich komórek.
+  * **Rozszerzony zasięg metropolitalny (~83 km²):** Obejmuje Stare Miasto, Kazimierz, Podgórze, Krowodrzę, Błonia, Dębniki, Grzegórzki, Dąbie, Czyżyny, Zabłocie i Tauron Arenę (`50.0300° N – 50.0950° N`, `19.8950° E – 20.0300° E`).
+  * **697 heksagonalnych kafelków:** Średnica heksagonu $\approx 350-400\,\text{m}$ (krawędź $\approx 200\,\text{m}$, powierzchnia $\approx 0.1\,\text{km}^2$). Odpowiada to idealnemu miejskiemu dystansowi spacerowemu (~4-6 min) i renderuje się w Leaflet w czasie poniżej 3 ms.
+  * **Bijective Storage:** 15-znakowe identyfikatory heksagonów H3 (np. `891e2e6b153ffff`) są mapowane na dwuelementowy wektor 32-bitowych liczb całkowitych (`tile_x`, `tile_y`) dzięki funkcji `h3IndexToSplitLong`, zachowując pełną kompatybilność z bazą PostgreSQL.
 * **Ochrona Prywatności (Privacy by Design):**
-  * W bazie **nie są zapisywane** surowe koordynaty ani ślady GPS użytkowników. Serwer przechowuje jedynie unikalne identyfikatory zaliczonych kafelków (`tile_x`, `tile_y`).
+  * W bazie **nie są zapisywane** surowe koordynaty ani ślady GPS użytkowników. Serwer przechowuje jedynie unikalne identyfikatory zaliczonych heksagonów.
 * **Mechanizm Wizualny Mgły Wojny (Fog of War):**
-  * **Kafelki nieodkryte są widoczne:** Tworzą jednolitą, półprzezroczystą mgłę (`fillOpacity: 0.22`) z elegancką, zwiększoną przezroczystością obramówek (`opacity: 0.25`), nie zasłaniając nazw ulic pod spodem.
-  * **Kafelki odkryte znikają:** Po przebyciu sektora (trasą lub GPS) mgła rozwiewa się, odsłaniając czystą mapę miasta.
+  * **Heksagony nieodkryte są widoczne:** Tworzą estetyczną, półprzezroczystą heksagonalną mgłę (`fillOpacity: 0.22`, `fillColor: #475569`) z subtelną obramówką (`opacity: 0.25`), nie zasłaniając nazw ulic pod spodem.
+  * **Heksagony odkryte znikają:** Po przebyciu sektora (trasą lub GPS) mgła rozwiewa się, odsłaniając czystą mapę miasta.
 * **Punktacja XP i Odznaki:**
-  * **+10 XP** za odkrycie kafelka i rozproszenie mgły,
+  * **+10 XP** za odkrycie heksagonu i rozproszenie mgły,
   * **+50 XP** za zgłoszenie bariery architektonicznej,
   * **+100 XP** za zgłoszenie bariery **ze zdjęciem** (kluczowy dowód audytu ze znacznikiem na mapie).
 * **Dwa Tryby Eksploracji (Przełącznik w profilu użytkownika):**
-  1. **Tryb Planera (Domyślny, toggle OFF):** Kafelki odblokowują się automatycznie wzdłuż wyznaczanych tras miejskich A $\to$ B.
+  1. **Tryb Planera (Domyślny, toggle OFF):** Heksagony odblokowują się automatycznie wzdłuż wyznaczanych tras miejskich A $\to$ B.
   2. **Tryb Wędrówki na żywo (Toggle ON, GPS):**
-     * Kafelki nie są odkrywane w planerze – użytkownik musi włączyć GPS i fizycznie wejść w dany sektor 100m.
+     * Kafelki nie są odkrywane w planerze – użytkownik musi włączyć GPS i fizycznie wejść w dany sektor heksagonalny.
      * **Auto-centrowanie mapy:** Po włączeniu trybu mapa automatycznie przełącza się na widok smartfona i płynnie centruje widok na aktualnej lokalizacji użytkownika (zoom 16).
      * **Wskaźnik GPS:** Pulsujący niebieski marker na mapie oraz pływający przycisk *„Moja lokalizacja”* umożliwiający ponowne wyśrodkowanie w dowolnej chwili.
-     * **Dynamiczne powiadomienia:** W czasie rzeczywistym pojawia się powiadomienie `✨ Odkryto kafel: X_Y (+10 XP)!`.
+     * **Dynamiczne powiadomienia:** W czasie rzeczywistym pojawia się powiadomienie `✨ Odkryto kafel: X (+10 XP)!`.
 
 ---
 

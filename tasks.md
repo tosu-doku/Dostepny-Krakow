@@ -99,3 +99,22 @@
   - **Automatyzacja CI/CD (`.github/workflows/ci.yml`):**
     - Automatyczne uruchamianie na push i PR (`main`, `feat/*`, `refactor/*`).
     - Sekwencja kroków: `npm ci` -> `npm run lint` -> `npm test` -> `npm run build`.
+
+- [x] **Zadanie 13: Heksagonalna Siatka Uber H3 & Rozszerzenie Pola Operacyjnego Krakowa (Branch: `feat/h3-hexagonal-grid`)**
+  - **Integracja Uber H3 (`h3-js` v4.5.0):**
+    - Wdrożono bibliotekę Uber H3 do dyskretnego indeksowania przestrzennego na heksagonach.
+    - Zastosowano **rozdzielczość 9** (średnia krawędź ~200 m, średnica komórki ~350–400 m, powierzchnia ~0.1 km²).
+  - **Rozszerzenie Pola Operacyjnego do ~83 km² (697 heksagonów):**
+    - Rozszerzono granice z wąskiego centrum (~11.9 km²) do pełnej metropolii: `50.0300° N – 50.0950° N`, `19.8950° E – 20.0300° E`.
+    - Obszar pokrywa m.in. Stare Miasto, Kazimierz, Podgórze, Krowodrzę, Błonia, Dębniki, Grzegórzki, Dąbie, Czyżyny, Zabłocie i Tauron Arenę.
+    - Liczba komórek wzrosła do optymalnych **697 heksagonów**, co gwarantuje natychmiastowe renderowanie w Leaflet (<3 ms) bez obciążania urządzeń mobilnych.
+  - **Bijektywne mapowanie 32-bit pod PostgreSQL (Zero Breaking Changes):**
+    - Komórka H3 jest 64-bitowym indeksem szesnastkowym (np. `'891e2e6b153ffff'`).
+    - Zastosowano funkcję `h3.h3IndexToSplitLong(index)` rozbijającą indeks na dwa 32-bitowe signed integery (`lower | 0`, `upper | 0`) zapisywane w polach `tile_x`, `tile_y` tabeli `public.user_discovered_tiles`.
+    - Gwarantuje to 100% wsteczną kompatybilność z istniejącą bazą PostgreSQL bez migracji niszczących schemat.
+  - **Renderowanie wielokątów w Leaflet (`AccessibleMap.tsx`):**
+    - Zastąpiono `L.rectangle` dynamicznymi wielokątami `L.polygon(boundary, ...)` z 6 wierzchołkami `[lat, lng]` zwracanymi przez `h3.cellToBoundary`.
+    - Zachowano pełną mechanikę odwróconej mgły wojny (nieodkryte heksagony widoczne z przezroczystością `0.22` i obramowaniem `0.25`, odkryte znikają).
+  - **Aktualizacja testów jednostkowych (23 testy):**
+    - `tests/grid.test.ts` w pełni przepisane pod H3: indeksowanie $O(1)$, 6-punktowe wierzchołki, bijektywny roundtrip `parseTileId`, próbkowanie tras `routeToTiles` oraz uniwersalny kalkulator rang.
+

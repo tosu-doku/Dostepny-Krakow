@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Barrier } from '@/types/barrier';
-import { KRAKOW_GRID_CONFIG, tileToBounds } from '@/services/grid';
+import { KRAKOW_GRID_CONFIG, getAllKrakowCells, getCellBoundary } from '@/services/grid';
 import {
   createStartIcon,
   createEndIcon,
@@ -271,41 +271,41 @@ export default function AccessibleMap({
     boundsPoly.addTo(discoveryLayer);
 
     const discoveredSet = new Set(discoveredTileIds);
+    const allCells = getAllKrakowCells();
 
-    // B. Draw Undiscovered Tiles (Fog of War)
+    // B. Draw Undiscovered Hexagonal Tiles (Uber H3 Fog of War)
     // Discovered tiles disappear (fog is lifted, revealing the map underneath)
-    for (let y = 0; y < KRAKOW_GRID_CONFIG.ROWS; y++) {
-      for (let x = 0; x < KRAKOW_GRID_CONFIG.COLS; x++) {
-        const tileId = `${x}_${y}`;
-        if (discoveredSet.has(tileId)) {
-          // Odkryty kafelek -> mgła znika (kafelek znika z mapy)
-          continue;
-        }
-
-        const bounds = tileToBounds(x, y);
-        const rect = L.rectangle(bounds, {
-          color: '#64748b',       // Elegancka, subtelna ramka
-          weight: 1,              // Cienka linia
-          opacity: 0.25,          // Zwiększona przezroczystość obramówki
-          fillColor: '#475569',   // Mgła wojny
-          fillOpacity: 0.22,      // Półprzezroczysta mgła odsłaniająca zarys ulic
-          interactive: true,
-        });
-
-        rect.bindTooltip(
-          `<div style="font-size:12px;font-weight:600;color:#1e293b;">🌫️ Kafel nieodkryty (Mgła)</div><div style="font-size:10px;color:#64748b;">Przejdź tędy lub włącz lokalizację na żywo • ID: ${tileId}</div>`,
-          { sticky: true }
-        );
-
-        rect.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          if (onTileClickRef.current) {
-            onTileClickRef.current(tileId);
-          }
-        });
-
-        rect.addTo(discoveryLayer);
+    for (const cellId of allCells) {
+      if (discoveredSet.has(cellId)) {
+        // Odkryty heksagon -> mgła znika (kafelek znika z mapy)
+        continue;
       }
+
+      const boundary = getCellBoundary(cellId);
+      if (boundary.length === 0) continue;
+
+      const hex = L.polygon(boundary, {
+        color: '#64748b',       // Elegancka, subtelna ramka heksagonu
+        weight: 1,              // Cienka linia
+        opacity: 0.25,          // Zwiększona przezroczystość obramówki
+        fillColor: '#475569',   // Mgła wojny
+        fillOpacity: 0.22,      // Półprzezroczysta mgła odsłaniająca zarys ulic
+        interactive: true,
+      });
+
+      hex.bindTooltip(
+        `<div style="font-size:12px;font-weight:600;color:#1e293b;">🌫️ Heksagon nieodkryty (Mgła)</div><div style="font-size:10px;color:#64748b;">Przejdź tędy lub włącz lokalizację na żywo • H3: ${cellId}</div>`,
+        { sticky: true }
+      );
+
+      hex.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        if (onTileClickRef.current) {
+          onTileClickRef.current(cellId);
+        }
+      });
+
+      hex.addTo(discoveryLayer);
     }
   }, [showDiscoveryGrid, discoveredTileIds, auditedTileIds]);
 

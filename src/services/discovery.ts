@@ -48,19 +48,12 @@ export async function unlockTilesForUser(
   const newlyUnlocked: string[] = [];
   const supabase = getSupabaseAdmin();
 
-  // Validate tileIds
+  // Validate tileIds (H3 hexagonal cells or legacy formats)
   const validTiles: { x: number; y: number; tileId: string }[] = [];
   for (const tid of tileIds) {
     const parsed = parseTileId(tid);
     if (parsed) {
-      if (
-        parsed.x >= 0 &&
-        parsed.x < KRAKOW_GRID_CONFIG.COLS &&
-        parsed.y >= 0 &&
-        parsed.y < KRAKOW_GRID_CONFIG.ROWS
-      ) {
-        validTiles.push({ x: parsed.x, y: parsed.y, tileId: tid });
-      }
+      validTiles.push({ x: parsed.x, y: parsed.y, tileId: tid });
     }
   }
 

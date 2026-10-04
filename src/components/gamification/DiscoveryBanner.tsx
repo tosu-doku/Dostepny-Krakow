@@ -86,7 +86,7 @@ export default function DiscoveryBanner({
         <div className="flex items-center gap-2.5 flex-wrap self-end sm:self-auto">
           {/* Tiles counters */}
           <div className="flex items-center gap-2 bg-black/25 px-2.5 py-1.5 rounded-lg border border-white/10 text-[11px]">
-            <span className="flex items-center gap-1 text-sky-200" title="Odkryte kafelki siatki ~100m">
+            <span className="flex items-center gap-1 text-sky-200" title="Odkryte heksagony Uber H3 (Rezolucja 9)">
               <Compass className="w-3.5 h-3.5 text-sky-400" />
               <strong>{unlockedTilesCount}</strong> / {KRAKOW_GRID_CONFIG.TOTAL_TILES}
             </span>
@@ -161,8 +161,8 @@ export default function DiscoveryBanner({
 
             <div className="space-y-3 text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
               <p>
-                Centrum Krakowa (Stare Miasto, Kazimierz, Kleparz, Grzegórzki) podzielone zostało na siatkę
-                <strong> 1 188 kafelków o wymiarach ~100m x 100m</strong>.
+                Obszar Krakowa (Stare Miasto, Kazimierz, Podgórze, Krowodrza, Błonia, Dębniki, Grzegórzki, Czyżyny) podzielony został na heksagonalną siatkę{' '}
+                <strong>{KRAKOW_GRID_CONFIG.TOTAL_TILES} heksagonów Uber H3 (Rezolucja 9, ~350m średnicy)</strong>.
               </p>
 
               <div className="space-y-2 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -175,7 +175,7 @@ export default function DiscoveryBanner({
                     <strong>Przejście przez kafelek (XP):</strong> Zależnie od wybranego trybu w profilu:
                     <ul className="list-disc pl-4 mt-1 space-y-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">
                       <li><strong>Tryb Planera (domyślny):</strong> Kafelki odblokowują się wzdłuż wyszukiwanych tras A → B.</li>
-                      <li><strong>Tryb Wędrówki na żywo (GPS):</strong> Kafelki odblokowują się automatycznie na bieżąco, gdy fizycznie wchodzisz w sektor siatki 100m.</li>
+                      <li><strong>Tryb Wędrówki na żywo (GPS):</strong> Kafelki odblokowują się automatycznie na bieżąco, gdy fizycznie wchodzisz w sektor heksagonalny.</li>
                     </ul>
                   </div>
                 </div>

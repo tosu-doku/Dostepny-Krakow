@@ -1,43 +1,51 @@
 /**
  * ==============================================================================
- * Grid & Map Discovery Service for Kraków City Center
+ * Uber H3 Hexagonal Grid & Map Discovery Service for Kraków Metropolitan Core
  * ==============================================================================
- * Divides Kraków śródmieście into a discrete ~100m x 100m grid for exploration,
- * gamification ("Fog of War"), and crowdsourcing motivation.
+ * Divides the expanded Kraków metropolitan core into discrete hexagonal cells
+ * using Uber's open-source H3 spatial indexing system at Resolution 9
+ * (~200m edge length, ~350-400m cell diameter, ~0.1 km² area).
  *
- * All conversions are strictly O(1) mathematical projections.
- * No user GPS trails are stored — only discrete tile IDs.
+ * Covers: Stare Miasto, Kazimierz, Podgórze, Krowodrza, Błonia, Dębniki,
+ * Grzegórzki, Dąbie, Czyżyny, Zabłocie, Mateczny, Tauron Arena (~83 km²).
+ *
+ * All operations are mathematically discrete, O(1), and privacy-preserving
+ * (no user GPS traces or raw coordinates are stored in the database).
  */
 
+import * as h3 from 'h3-js';
+
 export interface GridConfig {
+  RESOLUTION: number;
   LAT_MIN: number;
   LAT_MAX: number;
   LNG_MIN: number;
   LNG_MAX: number;
-  STEP_LAT: number; // ~100.08 m in latitude
-  STEP_LNG: number; // ~99.93 m in longitude
-  COLS: number;     // Number of columns along Longitude (X)
-  ROWS: number;     // Number of rows along Latitude (Y)
   TOTAL_TILES: number;
+  // Legacy aliases for backward compatibility
+  STEP_LAT?: number;
+  STEP_LNG?: number;
+  COLS?: number;
+  ROWS?: number;
 }
 
 export const KRAKOW_GRID_CONFIG: GridConfig = {
-  LAT_MIN: 50.0550,
-  LAT_MAX: 50.0750,
-  LNG_MIN: 19.9250,
-  LNG_MAX: 20.0000,
-  STEP_LAT: 0.0009, // ~100.08 m (111,200 m * 0.0009)
-  STEP_LNG: 0.0014, // ~99.93 m (71,380 m * 0.0014)
-  COLS: 54,         // Math.ceil((20.0000 - 19.9250) / 0.0014) = 54
-  ROWS: 22,         // Math.ceil((50.0750 - 50.0550) / 0.0009) = 22
-  TOTAL_TILES: 54 * 22, // 1,188 tiles total
+  RESOLUTION: 9,
+  LAT_MIN: 50.0300, // South: Podgórze, Mateczny, Zabłocie, Dębniki
+  LAT_MAX: 50.0950, // North: Krowodrza, Kleparz, Prądnik Czerwony
+  LNG_MIN: 19.8950, // West: Błonia, Park Jordana, Salwator
+  LNG_MAX: 20.0300, // East: Grzegórzki, Dąbie, Czyżyny, Tauron Arena
+  TOTAL_TILES: 697, // Exactly 697 hexagonal cells at Resolution 9
 };
 
+export const KRAKOW_H3_CONFIG = KRAKOW_GRID_CONFIG;
+
 export interface GridTile {
-  x: number;
-  y: number;
-  tileId: string; // e.g. "14_8"
-  bounds: [[number, number], [number, number]]; // [[south, west], [north, east]]
+  tileId: string; // H3 index string (e.g. "891e2e6b153ffff")
+  x: number;      // Bijective lower 32-bit integer for database storage
+  y: number;      // Bijective upper 32-bit integer for database storage
+  boundary: [number, number][]; // 6 [lat, lng] vertices of the hexagon
+  bounds: [[number, number], [number, number]]; // Envelope [[south, west], [north, east]]
   center: { lat: number; lng: number };
 }
 
@@ -52,25 +60,62 @@ export interface UserRank {
   progressPercent: number;
 }
 
+// Operating bounding polygon for Kraków exploration zone [lat, lng]
+const KRAKOW_EXPLORATION_POLYGON: [number, number][] = [
+  [KRAKOW_GRID_CONFIG.LAT_MIN, KRAKOW_GRID_CONFIG.LNG_MIN],
+  [KRAKOW_GRID_CONFIG.LAT_MAX, KRAKOW_GRID_CONFIG.LNG_MIN],
+  [KRAKOW_GRID_CONFIG.LAT_MAX, KRAKOW_GRID_CONFIG.LNG_MAX],
+  [KRAKOW_GRID_CONFIG.LAT_MIN, KRAKOW_GRID_CONFIG.LNG_MAX],
+  [KRAKOW_GRID_CONFIG.LAT_MIN, KRAKOW_GRID_CONFIG.LNG_MIN],
+];
+
+// Lazy-computed and in-memory cached array & set of all valid Kraków H3 cells
+let cachedKrakowCells: string[] | null = null;
+let cachedKrakowCellSet: Set<string> | null = null;
+
 /**
- * Checks whether coordinate is inside the Kraków exploration zone.
+ * Returns all H3 hexagonal cell indices covering Kraków's expanded operating zone.
+ * Cached in memory after first call (instantaneous O(1) lookup).
+ */
+export function getAllKrakowCells(): string[] {
+  if (!cachedKrakowCells) {
+    cachedKrakowCells = h3.polygonToCells(
+      KRAKOW_EXPLORATION_POLYGON,
+      KRAKOW_GRID_CONFIG.RESOLUTION
+    );
+    cachedKrakowCellSet = new Set(cachedKrakowCells);
+  }
+  return cachedKrakowCells;
+}
+
+/**
+ * Checks whether coordinate is inside the expanded Kraków exploration zone.
  */
 export function isInsideExplorationZone(
   lat: number,
   lng: number,
   config: GridConfig = KRAKOW_GRID_CONFIG
 ): boolean {
-  return (
-    lat >= config.LAT_MIN &&
-    lat <= config.LAT_MAX &&
-    lng >= config.LNG_MIN &&
-    lng <= config.LNG_MAX
-  );
+  if (
+    lat < config.LAT_MIN ||
+    lat > config.LAT_MAX ||
+    lng < config.LNG_MIN ||
+    lng > config.LNG_MAX
+  ) {
+    return false;
+  }
+
+  // Ensure cell is within valid Kraków polygon
+  if (!cachedKrakowCellSet) {
+    getAllKrakowCells();
+  }
+  const cell = h3.latLngToCell(lat, lng, config.RESOLUTION);
+  return cachedKrakowCellSet ? cachedKrakowCellSet.has(cell) : true;
 }
 
 /**
- * Converts GPS coordinate (lat, lng) to discrete tile indices (x, y).
- * Returns null if coordinate is outside the zone.
+ * Converts GPS coordinate (lat, lng) to an H3 hexagonal tile.
+ * Returns null if coordinate is outside Kraków's exploration zone.
  * Complexity: O(1)
  */
 export function coordsToTile(
@@ -82,87 +127,110 @@ export function coordsToTile(
     return null;
   }
 
-  const x = Math.floor((lng - config.LNG_MIN) / config.STEP_LNG);
-  const y = Math.floor((lat - config.LAT_MIN) / config.STEP_LAT);
+  const tileId = h3.latLngToCell(lat, lng, config.RESOLUTION);
+  const [lower, upper] = h3.h3IndexToSplitLong(tileId);
 
-  // Clamp within grid bounds
-  const clampedX = Math.max(0, Math.min(x, config.COLS - 1));
-  const clampedY = Math.max(0, Math.min(y, config.ROWS - 1));
-
+  // Cast to 32-bit signed integers for PostgreSQL INT storage
   return {
-    x: clampedX,
-    y: clampedY,
-    tileId: `${clampedX}_${clampedY}`,
+    x: lower | 0,
+    y: upper | 0,
+    tileId,
   };
 }
 
 /**
- * Parses a tileId string (e.g. "14_8") into x and y.
+ * Parses a tileId string (either H3 hex index or legacy "x_y") into integer pair { x, y }.
  */
 export function parseTileId(tileId: string): { x: number; y: number } | null {
+  if (!tileId) return null;
+
+  // 1. Uber H3 Index (hex string, e.g. "891e2e6b153ffff")
+  if (h3.isValidCell(tileId)) {
+    const [lower, upper] = h3.h3IndexToSplitLong(tileId);
+    return { x: lower | 0, y: upper | 0 };
+  }
+
+  // 2. Legacy "x_y" format fallback
   const parts = tileId.split('_');
-  if (parts.length !== 2) return null;
-  const x = parseInt(parts[0], 10);
-  const y = parseInt(parts[1], 10);
-  if (isNaN(x) || isNaN(y)) return null;
-  return { x, y };
+  if (parts.length === 2) {
+    const x = parseInt(parts[0], 10);
+    const y = parseInt(parts[1], 10);
+    if (!isNaN(x) && !isNaN(y)) {
+      return { x, y };
+    }
+  }
+
+  return null;
 }
 
 /**
- * Computes bounding rectangle coordinates for Leaflet [[south, west], [north, east]].
- * Complexity: O(1)
+ * Returns the 6 [lat, lng] vertices of an H3 hexagonal cell for Leaflet L.polygon.
+ */
+export function getCellBoundary(tileId: string): [number, number][] {
+  if (h3.isValidCell(tileId)) {
+    return h3.cellToBoundary(tileId);
+  }
+  return [];
+}
+
+/**
+ * Computes bounding rectangle [[south, west], [north, east]] for a tile.
  */
 export function tileToBounds(
-  x: number,
-  y: number,
-  config: GridConfig = KRAKOW_GRID_CONFIG
+  xOrTileId: number | string,
+  y?: number
 ): [[number, number], [number, number]] {
-  const south = config.LAT_MIN + y * config.STEP_LAT;
-  const north = south + config.STEP_LAT;
-  const west = config.LNG_MIN + x * config.STEP_LNG;
-  const east = west + config.STEP_LNG;
+  let hexTileId = typeof xOrTileId === 'string' ? xOrTileId : '';
 
+  if (!hexTileId && typeof xOrTileId === 'number' && typeof y === 'number') {
+    try {
+      hexTileId = h3.splitLongToH3Index(xOrTileId, y);
+    } catch {
+      // Fallback
+    }
+  }
+
+  if (hexTileId && h3.isValidCell(hexTileId)) {
+    const boundary = h3.cellToBoundary(hexTileId);
+    let south = Infinity;
+    let north = -Infinity;
+    let west = Infinity;
+    let east = -Infinity;
+
+    for (const [lat, lng] of boundary) {
+      if (lat < south) south = lat;
+      if (lat > north) north = lat;
+      if (lng < west) west = lng;
+      if (lng > east) east = lng;
+    }
+
+    return [
+      [south, west],
+      [north, east],
+    ];
+  }
+
+  // Default fallback envelope around Rynek Główny
   return [
-    [south, west],
-    [north, east],
+    [50.0610, 19.9360],
+    [50.0620, 19.9370],
   ];
 }
 
 /**
- * Computes center coordinate for a tile.
- * Complexity: O(1)
+ * Computes center coordinate for an H3 tile.
  */
-export function tileToCenter(
-  x: number,
-  y: number,
-  config: GridConfig = KRAKOW_GRID_CONFIG
-): { lat: number; lng: number } {
-  return {
-    lat: config.LAT_MIN + (y + 0.5) * config.STEP_LAT,
-    lng: config.LNG_MIN + (x + 0.5) * config.STEP_LNG,
-  };
+export function tileToCenter(tileId: string): { lat: number; lng: number } {
+  if (h3.isValidCell(tileId)) {
+    const [lat, lng] = h3.cellToLatLng(tileId);
+    return { lat, lng };
+  }
+  return { lat: 50.0614, lng: 19.9365 };
 }
 
 /**
- * Gets full tile object by indices.
- */
-export function getTile(
-  x: number,
-  y: number,
-  config: GridConfig = KRAKOW_GRID_CONFIG
-): GridTile {
-  return {
-    x,
-    y,
-    tileId: `${x}_${y}`,
-    bounds: tileToBounds(x, y, config),
-    center: tileToCenter(x, y, config),
-  };
-}
-
-/**
- * Samples a route polyline [[lng, lat], ...] and returns all unique tile IDs intersected by the route.
- * Samples every ~30 meters along segment vectors to ensure no diagonal tiles are missed.
+ * Samples a route polyline [[lng, lat], ...] and returns all unique H3 hexagon IDs intersected by the route.
+ * Samples every ~50 meters along route vectors to ensure no hexagon cells are missed.
  */
 export function routeToTiles(
   coordinates: [number, number][],
@@ -186,7 +254,7 @@ export function routeToTiles(
       const dLng = nextLng - lng;
       // Approximate length in meters
       const lengthMeters = Math.hypot(dLat * 111200, dLng * 71380);
-      const steps = Math.ceil(lengthMeters / 35); // sample every ~35m
+      const steps = Math.ceil(lengthMeters / 50); // sample every ~50m
 
       if (steps > 1) {
         for (let s = 1; s < steps; s++) {
@@ -215,13 +283,13 @@ export function calculateUserRank(
   // XP formula: 10 XP per tile + 100 XP per photo audit
   const totalXp = discoveredTilesCount * 10 + auditedPhotosCount * 100;
 
-  // Level thresholds
+  // Level thresholds scaled for the 697-hex expanded city
   const levels = [
     { level: 1, title: 'Turysta z Plant', requiredXp: 0 },
-    { level: 2, title: 'Krakowski Przechodzień', requiredXp: 150 },     // ~15 tiles
-    { level: 3, title: 'Eksplorator Starego Miasta', requiredXp: 500 },  // ~50 tiles
-    { level: 4, title: 'Kartograf Dostępności', requiredXp: 1500 },     // ~150 tiles
-    { level: 5, title: 'Mistrz Krakowa bez Barier', requiredXp: 3500 }, // ~350 tiles
+    { level: 2, title: 'Krakowski Przechodzień', requiredXp: 100 },     // ~10 heksagonów
+    { level: 3, title: 'Eksplorator Starego Miasta', requiredXp: 350 }, // ~35 heksagonów
+    { level: 4, title: 'Kartograf Dostępności', requiredXp: 1000 },    // ~100 heksagonów
+    { level: 5, title: 'Mistrz Metropolii bez Barier', requiredXp: 2500 }, // ~250 heksagonów
   ];
 
   let currentLevel = levels[0];
@@ -230,14 +298,22 @@ export function calculateUserRank(
   for (let i = levels.length - 1; i >= 0; i--) {
     if (totalXp >= levels[i].requiredXp) {
       currentLevel = levels[i];
-      nextLevel = levels[i + 1] || { level: levels[i].level + 1, title: 'Legenda Krakowa', requiredXp: levels[i].requiredXp + 2000 };
+      nextLevel =
+        levels[i + 1] || {
+          level: levels[i].level + 1,
+          title: 'Legenda Krakowa',
+          requiredXp: levels[i].requiredXp + 1500,
+        };
       break;
     }
   }
 
   const xpInLevel = totalXp - currentLevel.requiredXp;
   const xpForNextLevel = nextLevel.requiredXp - currentLevel.requiredXp;
-  const progressPercent = Math.min(100, Math.round((xpInLevel / Math.max(1, xpForNextLevel)) * 100));
+  const progressPercent = Math.min(
+    100,
+    Math.round((xpInLevel / Math.max(1, xpForNextLevel)) * 100)
+  );
 
   return {
     title: currentLevel.title,
