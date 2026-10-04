@@ -62,6 +62,14 @@ export default function RouteTimelineSheet({
 
   // Build timeline items from start, barriers, and destination
   const barriers = route.all_barriers || [];
+  const totalPoints = barriers.length + 2;
+
+  const pointsCountText =
+    totalPoints === 1
+      ? '1 punkt na trasie'
+      : totalPoints % 10 >= 2 && totalPoints % 10 <= 4 && (totalPoints % 100 < 10 || totalPoints % 100 >= 20)
+      ? `${totalPoints} punkty na trasie`
+      : `${totalPoints} punktów na trasie`;
 
   return (
     <div className="w-full bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-slate-100 flex flex-col gap-4">
@@ -69,14 +77,14 @@ export default function RouteTimelineSheet({
       <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto shrink-0 mb-1" />
 
       {/* Header (Attachment 2) */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wide">
-              {barriers.length + 2} punkty na trasie
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wide whitespace-nowrap">
+              {pointsCountText}
             </span>
             <span
-              className={`text-xs font-black px-2.5 py-1 rounded-full border shadow-2xs ${
+              className={`inline-flex items-center gap-1 text-xs font-black px-2 py-0.5 rounded-full border shadow-2xs whitespace-nowrap shrink-0 ${
                 route.profile === 'foot_walking'
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                   : route.profile === 'wheelchair'
@@ -87,19 +95,19 @@ export default function RouteTimelineSheet({
               }`}
             >
               {route.profile === 'foot_walking' && '🚶 Pieszy'}
-              {route.profile === 'wheelchair' && '♿ Wózek inw.'}
-              {route.profile === 'stroller' && '👶 Dziecięcy'}
-              {route.profile === 'visually_impaired' && '👁️ Niedowidzący'}
+              {route.profile === 'wheelchair' && '♿ Wózek'}
+              {route.profile === 'stroller' && '👶 Wózek dz.'}
+              {route.profile === 'visually_impaired' && '👁️ Wzrok'}
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mt-0.5">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight mt-1 truncate">
             Co czeka Cię po drodze
           </h2>
         </div>
 
         {/* Confidence Badge (Attachment 2) */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold shrink-0">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+        <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-extrabold shrink-0 whitespace-nowrap">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>Trasa {averageConfidence}% pewna</span>
         </div>
       </div>
