@@ -216,6 +216,8 @@ Projekt wyposażono w pełny pakiet testów jednostkowych oraz zautomatyzowany p
   * Wykonuje sekwencję: instalacja czysta (`npm ci`), linter (`npm run lint`), testy jednostkowe (`npm test`) oraz build produkcyjny (`npm run build`).
 * **Scenariusze testów manualnych:**
   * Szczegółowy przewodnik po wszystkich scenariuszach funkcjonalnych (UI oraz API cURL) znajduje się w dokumencie `TESTING.md`.
+* **Refaktoring UI & Mobilny Design System:**
+  * Szczegółowy opis architektury mobilnej (Portrait-First, Light Theme), tokenów kolorystycznych i realizacji widoków z załączników znajduje się w dokumencie `UI_REFACTORING.md`.
 
 ---
 

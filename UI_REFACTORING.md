@@ -1,0 +1,199 @@
+# 📱 Dokumentacja Refaktoringu UI – Mobile Portrait & Design System
+
+> Dedykowana dokumentacja przebudowy interfejsu użytkownika aplikacji **„Kraków bez barier”** na branchu `feat/mobile-ui-refactor`. Dokument opisuje założenia architektoniczne, wdrożony system designu (Design Tokens), realizację makiet z załączników oraz aktualny stan i postęp prac.
+
+---
+
+## 🎯 1. Główne Założenia Refaktoringu
+
+Celem refaktoringu jest przekształcenie hackathonowego interfejsu desktopowo-responsywnego w dedykowane, nowoczesne doświadczenie **Mobile-First w układzie pionowym (Portrait)**, odpowiadające realnemu użytkowaniu nawigacji pieszej na smartfonach na ulicach Krakowa.
+
+### Kluczowe decyzje projektowe:
+1. **Układ Mobile Portrait (360px – 430px):**
+   - Interfejs zoptymalizowany pod jedną rękę i orientację pionową.
+   - Na urządzeniach desktopowych interfejs prezentowany jest jako elegancka, wycentrowana ramka smartfona (`max-w-md mx-auto min-h-screen`), eliminując rozciąganie elementów na szerokich monitorach.
+2. **Wyłącznie Jasny Motyw (Strict Light Theme):**
+   - Całkowite usunięcie media queries ciemnego motywu (`@media (prefers-color-scheme: dark)`).
+   - Zapewnienie maksymalnej czytelności w pełnym słońcu na zewnątrz.
+   - Rygorystyczny kontrast tekstu i kontrolek do tła (zgodność z **WCAG 2.2 AA** – współczynnik kontrastu $\ge 4.5:1$).
+3. **Nowoczesna Typografia i Design Tokens:**
+   - Krój pisma **Plus Jakarta Sans** (Google Fonts) w wagach 400, 500, 600, 700 i 800 z pełną obsługą polskich znaków diakrytycznych (`latin-ext`).
+   - Centralizacja stałych kolorów, promieni zaokrągleń i cieni w `src/constants/theme.ts`.
+4. **Nawigacja w Stylu Aplikacji Mobilnej:**
+   - 5-elementowy dolny pasek nawigacyjny (`BottomNavigation`): *Mapa*, *Trasa*, *Liga*, *Dodaj*, *Profil*.
+   - Pływające panele i wysuwany arkusz dolny (*Bottom Sheet*) niezasłaniające kluczowych elementów mapy.
+
+---
+
+## 🎨 2. System Designu & Tokeny Wizualne (`src/constants/theme.ts`)
+
+Wszystkie stałe wizualne zostały wyekstrahowane do spójnego modułu konfiguracyjnego:
+
+```typescript
+export const THEME_COLORS = {
+  // Barwy główne
+  primary: '#7c3aed',       // Fiolet akcentowy
+  primaryLight: '#ede9fe',  // Jasny fiolet tła akcentu
+  primaryDark: '#5b21b6',   // Ciemny fiolet
+  
+  // Akcenty akcji & CTA
+  ctaMagenta: '#d90479',    // Wyrazista magenta dla głównych CTA (wg załącznika 1)
+  ctaMagentaHover: '#b50364',
+  plumHeader: '#4c0519',    // Głęboka śliwka/burgund nagłówka (wg załącznika 3)
+  
+  // Trasa & Grywalizacja H3
+  routeHexGreen: '#34d399',      // Jasnozielone heksagony trasy (wg załącznika 1)
+  routeHexGreenBorder: '#059669',
+  fogOfWarHex: '#475569',        // Neutralna mgła wojny poza trasą
+  
+  // Tła & Powierzchnie
+  background: '#ffffff',
+  surfaceLight: '#f8fafc',
+  surfaceMuted: '#f1f5f9',
+  
+  // Tekst i typografia
+  textPrimary: '#0f172a',
+  textSecondary: '#64748b',
+  textMuted: '#94a3b8',
+  
+  // Statusy i bezpieczeństwo
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  info: '#3b82f6',
+};
+```
+
+### Typografia:
+* **Czcionka bazowa:** `Plus Jakarta Sans`, sans-serif.
+* **Skala:** `xs` (11px), `sm` (13px), `base` (15px), `lg` (18px), `xl` (20px), `2xl` (24px).
+* **Zaokrąglenia:** `rounded-2xl` (16px) dla kart i modali, `rounded-full` (9999px) dla pigułek wyszukiwania i przycisków akcji.
+
+---
+
+## 🗺️ 3. Realizacja Wymagań z Załączników
+
+### Załącznik 1: Wizualizacja Trasy na Mapie & Heksagony H3
+* **Jasnozielone heksagony korytarza trasy:**
+  * W [`src/components/map/AccessibleMap.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/map/AccessibleMap.tsx) funkcja sprawdzająca `routeHexIds.has(tile.id)` w trybie wędrówki na żywo barwi heksagony trasy na kolor `#34d399` (obrys `#059669`), informując użytkownika o zaliczanych sektorach.
+  * Heksagony mgły wojny poza trasą pozostają neutralne grafitowe (`#475569`).
+* **Pigułki barier i udogodnień (`createBarrierPillIcon`):**
+  * Zamiast zwykłych okrągłych kropek, na trasie renderowane są czytelne pigułki tekstowe:
+    * `✓ Podjazd` (jasnozielone tło, ciemnozielony tekst),
+    * `⚠️ Krawężnik 4 cm` (jasnożółte tło, pomarańczowy tekst),
+    * `⚠️ 4 stopnie` (czerwone/różowe tło ostrzegawcze).
+* **Pływające przyciski szybkiej akcji:**
+  * Pływający przycisk ze zdjęciem i aparatem: `Dodaj zdjęcie / Przejmij sektor (+25 XP)`.
+  * Akcentowany przycisk CTA `Apply` zamykający filtry i aplikujący zmiany.
+
+---
+
+### Załącznik 2: Nawigacja Krok po Kroku (Turn-by-Turn) & Arkusz Trasy
+* **Górny ciemny baner manewru ([`src/components/navigation/TurnBanner.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/TurnBanner.tsx)):**
+  * Kontrastowy, grafitowy panel (`bg-slate-900/95`) z żółtą ikoną skrętu w prawo/lewo.
+  * Czytelny dystans do manewru (np. `Za 50 metrów`) i nazwa ulicy docelowej (np. `Skręć w prawo w Floriańską`).
+* **Pływające karty statystyk trasy ([`src/components/navigation/RouteStatCards.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/RouteStatCards.tsx)):**
+  * Karta 1: Szacowany czas marszu i godzina przybycia (np. `18 min | przyjazd 14:42`).
+  * Karta 2: Dystans i profil architektoniczny (np. `1,2 km | bez schodów` lub `1,2 km | 2 przeszkody`).
+* **Wysuwany dolny arkusz trasy ([`src/components/navigation/RouteTimelineSheet.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/RouteTimelineSheet.tsx)):**
+  * Nagłówek *„Co czeka Cię po drodze”* z wskaźnikiem pewności trasy: `✓ Trasa 86% pewna` (na podstawie średniego `confidence_score` barier na trasie).
+  * Wertykalna oś czasu ze zdarzeniami:
+    * Punkt startowy (zielony znacznik A),
+    * Wykryte bariery i udogodnienia na trasie (ze zdjęciami i tagami),
+    * Kolejne manewry i zmiany ulic,
+    * Punkt końcowy (fioletowy znacznik B).
+  * **Integracja z mową (Web Speech API):**
+    * Dedykowany przycisk `🔊 Włącz opis głosowy trasy`.
+    * Wykorzystuje `window.speechSynthesis` z polskim głosem (`pl-PL`), czytający kolejne manewry i ostrzeżenia o schodach/krawężnikach dla osób niedowidzących.
+
+---
+
+### Załącznik 3: Karta „Utwórz trasę” & Modal Dostępności
+* **Karta wyszukiwania trasy ([`src/components/navigation/RouteSearchCard.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/RouteSearchCard.tsx)):**
+  * Nagłówek w kolorze głębokiej śliwki/burgundu (`#4c0519`) z tekstem *„Utwórz trasę”*.
+  * Dwa wejścia w kształcie pigułek (`rounded-full`):
+    * Punkt początkowy: zielony punkt wskaźnikowy, pole tekstowe, przycisk czyszczenia.
+    * Punkt docelowy: fioletowy punkt wskaźnikowy, pole tekstowe.
+    * Przycisk szybkiego odwrócenia punktów start/meta (`ArrowUpDown`).
+  * Przycisk suwaków (`SlidersHorizontal`) otwierający dedykowany modal preferencji dostępności.
+  * Tryb manualnego wskazywania punktów na mapie chroniony checkboxem.
+* **Modal preferencji dostępności ([`src/components/navigation/AccessibilityFilterModal.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/AccessibilityFilterModal.tsx)):**
+  * Szybki wybór profilu dostępności:
+    * ♿ *Wózek inwalidzki* (priorytet: brak schodów, niskie krawężniki, rampy),
+    * 👶 *Wózek dziecięcy* (dopuszczalne 1-2 stopnie, unikanie bruku),
+    * 🦯 *Osoba niedowidząca* (priorytet: sygnalizacja dźwiękowa, pasy fakturowe, poręcze),
+    * 🚶 *Pieszy bez barier* (optymalizacja czasu).
+  * Szczegółowe filtry:
+    * Maksymalna wysokość krawężnika (suwak 2 cm – 15 cm),
+    * Bezwzględne omijanie schodów bez ramp,
+    * Wymagane poręcze przy schodach,
+    * Unikanie nawierzchni z kostki brukowej.
+
+---
+
+## 🏛️ 4. Dolny Pasek Nawigacyjny (`BottomNavigation.tsx`)
+
+Aplikacja mobilna posiada stały, ergonomiczny pasek dolny z 5 zakładkami:
+1. **Mapa (`map`):** Pełnoekranowy widok Krakowa z siatką H3, pozycją GPS, mgłą wojny i punktami barier.
+2. **Trasa (`route`):** Widok wyszukiwania i aktywnej nawigacji z banerem manewru i osią czasu.
+3. **Liga (`league`):** Tablica liderów grywalizacji, ranking użytkowników i statystyki odkrytych heksagonów.
+4. **Dodaj (`add`):** Szybkie zgłoszenie nowej przeszkody z geolokalizacją i uploadem zdjęcia do Supabase Storage.
+5. **Profil (`profile`):** Informacje o użytkowniku, zdobyte punkty XP, ranga i historia audytów.
+
+---
+
+## 📁 5. Struktura Nowych i Zmodyfikowanych Plików
+
+| Plik | Typ | Rola w Systemie |
+| :--- | :--- | :--- |
+| `src/constants/theme.ts` | **Nowy** | Centralna definicja Design Tokens (kolory, typografia, cienie, promienie). |
+| `src/components/layout/BottomNavigation.tsx` | **Nowy** | Mobilny dolny pasek nawigacyjny z 5 zakładkami i obsługą ARIA. |
+| `src/components/navigation/RouteSearchCard.tsx` | **Nowy** | Karta „Utwórz trasę” z polami-pigułkami i przyciskiem filtrów. |
+| `src/components/navigation/AccessibilityFilterModal.tsx` | **Nowy** | Modal wyboru profilu i parametrów dostępności trasy. |
+| `src/components/navigation/TurnBanner.tsx` | **Nowy** | Górny ciemny baner manewrów turn-by-turn. |
+| `src/components/navigation/RouteStatCards.tsx` | **Nowy** | Pływające kafelki z czasem, godziną dotarcia i dystansem. |
+| `src/components/navigation/RouteTimelineSheet.tsx` | **Nowy** | Wysuwany arkusz barier na trasie z lektorem mowy Web Speech API. |
+| `src/components/map/AccessibleMap.tsx` | Modyfikacja | Zielone heksagony trasy H3, pigułki przeszkód i pływające przyciski akcji. |
+| `src/components/map/mapIcons.ts` | Modyfikacja | Generator ikon Leaflet `createBarrierPillIcon` w formie zaokrąglonych etykiet. |
+| `src/app/page.tsx` | Modyfikacja | Integracja mobilnego kontenera portrait, zakładek i nowych komponentów nawigacji. |
+| `src/app/globals.css` | Modyfikacja | Wyłączenie ciemnego motywu, czyste tła, style typografii Plus Jakarta Sans. |
+| `src/app/layout.tsx` | Modyfikacja | Podpięcie czcionki Google Font `Plus_Jakarta_Sans` z podzbiorem `latin-ext`. |
+
+---
+
+## ♿ 6. Dostępność Cyfrowa (WCAG 2.2 AA) w Nowym UI
+
+Refaktoring w pełni respektuje zasady dostępności opisane w [`AGENTS.md`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/AGENTS.md):
+1. **Pewność Informacji:** Brak danych o odcinku nigdy nie oznacza braku przeszkody – w arkuszu trasy odcinki niezweryfikowane prezentują status `Stan nieznany (brak audytu)`.
+2. **Pola Metadanych Barier:** Wszystkie wyświetlane obiekty barier zachowują atrybuty `source`, `confidence_score` oraz `last_verified_at`.
+3. **Ekwiwalent Tekstowy dla Mapy:** Wszystkie informacje prezentowane graficznie na mapie mają pełny odpowiednik w drzewie DOM w arkuszu `RouteTimelineSheet` oraz są odczytywane przez wbudowany syntezator mowy.
+4. **Obsługa Klawiatury:** Wszystkie interaktywne kontrolki, pola tekstowe i modale obsługują `Tab`, `Shift+Tab`, `Enter` oraz `Escape`.
+5. **Minimalny Kontrast:** Ciemny tekst (`#0f172a`, `#4c0519`) na jasnym tle (`#ffffff`, `#f8fafc`) osiąga kontrast powyżej `7:1`, znacznie przekraczając wymóg `4.5:1`.
+
+---
+
+## 📊 7. Stan Prac & Progress Tracker
+
+- [x] **Inicjalizacja brancha:** Utworzono dedykowany branch `feat/mobile-ui-refactor`.
+- [x] **Design Tokens & Typografia:** Zdefiniowano tokeny w `theme.ts` i wdrożono `Plus Jakarta Sans`.
+- [x] **Wymuszenie Light Theme:** Usunięto media queries ciemnego motywu w `globals.css`.
+- [x] **Załącznik 1 (Mapa & H3):**
+  - [x] Zielone heksagony trasy w trybie live navigation (`#34d399` / `#059669`).
+  - [x] Pigułki barier na mapie (`createBarrierPillIcon`).
+  - [x] Pływający przycisk `Dodaj zdjęcie / Przejmij sektor`.
+  - [x] Pływający przycisk CTA `Apply`.
+- [x] **Załącznik 2 (Nawigacja & Timeline):**
+  - [x] Ciemny baner manewru `TurnBanner.tsx` z żółtą ikoną i odległością.
+  - [x] Pływające karty statystyk `RouteStatCards.tsx` (czas, przyjazd, dystans).
+  - [x] Wysuwany dolny arkusz `RouteTimelineSheet.tsx` z odznaką pewności trasy.
+  - [x] Synteza mowy Web Speech API (`pl-PL`) z przyciskiem włączania lektora.
+- [x] **Załącznik 3 (Wyszukiwanie & Preferencje):**
+  - [x] Karta `RouteSearchCard.tsx` z burgundowym nagłówkiem i polami pigułkowymi.
+  - [x] Przycisk odwracania A/B i czyszczenia pól.
+  - [x] Modal `AccessibilityFilterModal.tsx` z profilami i suwakami barier.
+- [x] **Dolna Nawigacja Mobilna:** Komponent `BottomNavigation.tsx` z 5 zakładkami.
+- [x] **Integracja w `src/app/page.tsx`:** Responsywny kontener `max-w-md mx-auto min-h-screen`.
+- [x] **Testy Jednostkowe & Kompilacja:**
+  - [x] Vitest: **23/23** testów passing (`npm test`).
+  - [x] ESLint: **0 błędów** (`npm run lint`).
+  - [x] Next.js Build: Pomyślna kompilacja wszystkich 15 tras produkcyjnych (`npm run build`).
