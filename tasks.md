@@ -112,9 +112,14 @@
     - Komórka H3 jest 64-bitowym indeksem szesnastkowym (np. `'891e2e6b153ffff'`).
     - Zastosowano funkcję `h3.h3IndexToSplitLong(index)` rozbijającą indeks na dwa 32-bitowe signed integery (`lower | 0`, `upper | 0`) zapisywane w polach `tile_x`, `tile_y` tabeli `public.user_discovered_tiles`.
     - Gwarantuje to 100% wsteczną kompatybilność z istniejącą bazą PostgreSQL bez migracji niszczących schemat.
-  - **Renderowanie wielokątów w Leaflet (`AccessibleMap.tsx`):**
-    - Zastąpiono `L.rectangle` dynamicznymi wielokątami `L.polygon(boundary, ...)` z 6 wierzchołkami `[lat, lng]` zwracanymi przez `h3.cellToBoundary`.
-    - Zachowano pełną mechanikę odwróconej mgły wojny (nieodkryte heksagony widoczne z przezroczystością `0.22` i obramowaniem `0.25`, odkryte znikają).
+  - **Optymalizacja UI/UX Heksagonów (`AccessibleMap.tsx`):**
+    - Usunięto zbędne tooltipy z heksagonów mgły wojny.
+    - Ustawiono `interactive: false` na wielokątach heksagonów – wyłączono możliwość ich zaznaczania i najechania курsorem (`pointer-events: none`), co poprawiło wydajność i sprawiło, że kliknięcia w mapę przechodzą bezpośrednio do podłoża mapy.
+  - **Zabezpieczenie Wyboru Punktów Trasy A / B (`RoutePlanner.tsx` & `page.tsx`):**
+    - Wprowadzono blokadę modyfikacji punktów startowych i docelowych z mapy, dopóki użytkownik nie zaznaczy checkboxa *„Wskaż własne punkty (kliknięcie na mapie / edycja)”*.
+    - Zapobiega to przypadkowemu nadpisywaniu predefiniowanych tras przy przeglądaniu mapy.
+    - Zapewniono pełne i bezproblemowe działanie wskazywania lokalizacji przeszkód w trybie *„Zgłoś barierę (Crowdsourcing)”*.
   - **Aktualizacja testów jednostkowych (23 testy):**
     - `tests/grid.test.ts` w pełni przepisane pod H3: indeksowanie $O(1)$, 6-punktowe wierzchołki, bijektywny roundtrip `parseTileId`, próbkowanie tras `routeToTiles` oraz uniwersalny kalkulator rang.
+
 

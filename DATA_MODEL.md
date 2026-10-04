@@ -277,7 +277,11 @@ SELECT
     (SELECT COUNT(*) FROM public.barriers b WHERE b.created_by = u.id) AS contributions_count
 FROM public.users u;
 
--- 14. Tabela Odkrytych Kafelków Siatki Miejskiej (Gamifikacja & Mgła Wojny)
+-- 14. Tabela Odkrytych Kafelków Siatki Miejskiej (Gamifikacja & Mgła Wojny - Uber H3)
+-- Dla heksagonów Uber H3 (rezolucja 9):
+-- tile_x = dolne 32-bity 64-bitowego indeksu komórki (h3.h3IndexToSplitLong(id)[0] | 0)
+-- tile_y = górne 32-bity 64-bitowego indeksu komórki (h3.h3IndexToSplitLong(id)[1] | 0)
+-- tile_id = 15-znakowy identyfikator H3 szesnastkowy (np. '891e2e6b153ffff')
 CREATE TABLE IF NOT EXISTS public.user_discovered_tiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,

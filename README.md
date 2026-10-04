@@ -86,10 +86,10 @@ Aplikacja rozwiązuje ten problem poprzez:
 ### Tabela `public.user_discovered_tiles`
 * `id`: UUID (Primary Key)
 * `user_id`: UUID (opcjonalny klucz do `public.users.id`)
-* `tile_x`: INT (indeks kolumny 0–53)
-* `tile_y`: INT (indeks wiersza 0–21)
-* `tile_id`: TEXT (np. `14_8`)
-* `has_photo_contribution`: BOOLEAN (flaga złotego kafla audytu ze zdjęciem)
+* `tile_x`: INT (dolne 32-bity bijektywnego indeksu Uber H3 `lower | 0`)
+* `tile_y`: INT (górne 32-bity bijektywnego indeksu Uber H3 `upper | 0`)
+* `tile_id`: TEXT (15-znakowy indeks komórki Uber H3, np. `891e2e6b153ffff`)
+* `has_photo_contribution`: BOOLEAN (flaga zaudytowanego heksagonu ze zdjęciem bariery)
 * `unlocked_at`: TIMESTAMPTZ
 
 ---
@@ -199,14 +199,14 @@ W celu ochrony platformy crowdsourcingowej przed spamem i wandalizmem wdrożono 
 
 Projekt wyposażono w pełny pakiet testów jednostkowych oraz zautomatyzowany proces Continuous Integration:
 
-* **Runner testowy:** **Vitest** zintegrowany z Next.js App Router i TypeScript (czas wykonania całego pakietu: ~450 ms).
-* **22 testy jednostkowe:**
-  * `tests/grid.test.ts` – algorytm rzutowania współrzędnych $O(1)$, wyznaczanie granic kafelków, próbkowanie tras i mechanika poziomów/XP.
+* **Runner testowy:** **Vitest** zintegrowany z Next.js App Router i TypeScript (czas wykonania całego pakietu: ~500 ms).
+* **23 testy jednostkowe:**
+  * `tests/grid.test.ts` – algorytm indeksowania przestrzennego Uber H3 (rozdzielczość 9), wyznaczanie wielokątów heksagonów, bijektywny roundtrip `parseTileId`, próbkowanie tras i mechanika poziomów/XP.
   * `tests/routing.test.ts` – odległości Haversine, prędkości marszu dla profili (wózek inwalidzki, dziecięcy, pieszy), realistyczne kary czasowe za przeszkody architektoniczne.
   * `tests/barriers.test.ts` – parsowanie geometrii PostGIS (GeoJSON Point, WKT, invalid), sanitizacja i normalizacja obiektów wg standardu WCAG/AGENTS.md.
 * **Dostępne komendy CLI:**
   ```bash
-  npm test           # Uruchomienie pełnego pakietu 22 testów
+  npm test           # Uruchomienie pełnego pakietu 23 testów
   npm run test:watch # Tryb ciągłego testowania z hot-reloadem (TDD)
   npm run lint       # Analiza statyczna kodu ESLint
   npm run build      # Produkcyjna kompilacja i kontrola typów
