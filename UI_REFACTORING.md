@@ -231,6 +231,12 @@ Refaktoring w pełni respektuje zasady dostępności opisane w [`AGENTS.md`](fil
   - [x] Nowy styl jasnego motywu: fioletowe tło (`bg-purple-600`), biały kontener na ikonę aparatu (`bg-white text-purple-700`).
   - [x] Zmiana etykiety przycisku siatki na *„Ukryj siatkę heksagonów”* / *„Pokaż siatkę heksagonów”* (bez dopisku H3).
   - [x] Dodano przycisk przełączania siatki zarówno w zakładce **Eksploracja** (`DiscoveryBanner.tsx`), jak i w zakładce **Profil** (`ProfileView.tsx`).
+- [x] **Refaktoring Sekcji „Dodaj” (Zgłoś utrudnienie):**
+  - [x] Usunięto dopisek `(Crowdsourcing)`.
+  - [x] Przepisano cały formularz na czysty, jasny motyw (`bg-white rounded-3xl`, usunięto klasy dark mode).
+  - [x] Zmieniono terminologię w całym UI z *„bariera”* na *„utrudnienie”* (*Zgłoś utrudnienie*, *Rodzaj utrudnienia*, *Dodaj utrudnienie do bazy*).
+  - [x] Usunięto tekst *„Dotknij mapy lub kliknij…”* z pola lokalizacji; gdy lokalizacja/GPS jest aktywna, automatycznie wyświetlane są sformatowane współrzędne.
+  - [x] Zastąpiono domyślny przycisk przeglądarki `Choose file` estetycznym, dedykowanym przyciskiem z ikoną aparatu i etykietą **„Zrób zdjęcie”**.
 - [x] **Testy Jednostkowe & Kompilacja:**
   - [x] Vitest: **23/23** testów passing (`npm test`).
   - [x] ESLint: **0 błędów** (`npm run lint`).

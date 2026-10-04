@@ -449,10 +449,10 @@ export default function Home() {
           />
         </div>
 
-        {/* MAIN TAB 4: DODAJ (Crowdsourcing - Add Barrier with Photo) */}
+        {/* MAIN TAB 4: DODAJ (Zgłoś utrudnienie) */}
         <div className={`p-4 flex-1 flex flex-col gap-4 ${mobileTab === 'crowdsource' ? 'block' : 'hidden'}`}>
           <AddBarrierForm
-            selectedLocation={pickedLocation}
+            selectedLocation={pickedLocation || (liveLocationEnabled ? currentGpsCoords : null)}
             onSelectCurrentLocation={handleUseCurrentLocation}
             currentUser={currentUser}
             onBarrierCreated={(info) => {
@@ -461,7 +461,7 @@ export default function Home() {
                 unlockBarrierTile(info.latitude, info.longitude, info.hasPhoto);
               }
               if (startPoint && endPoint) {
-                handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
+                handleSearchRoute(startPoint, endPoint, route?.profile || 'foot_walking');
               }
               setMobileTab('map');
             }}
