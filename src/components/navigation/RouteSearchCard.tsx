@@ -54,7 +54,7 @@ const PRESET_ROUTES = [
     name: 'Park Bednarskiego → Plac Wolnica',
     startName: 'Park Bednarskiego',
     endName: 'Plac Wolnica',
-    start: { lat: 50.0435, lng: 19.9485 },
+    start: { lat: 50.042714, lng: 19.948461 },
     end: { lat: 50.0495, lng: 19.944 },
   },
 ];
