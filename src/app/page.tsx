@@ -51,6 +51,7 @@ export default function Home() {
   });
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pickingTarget, setPickingTarget] = useState<'start' | 'end' | null>(null);
+  const [useCustomCoords, setUseCustomCoords] = useState(false);
 
   // Gamification & Discovery Hook
   const {
@@ -153,6 +154,11 @@ export default function Home() {
   const handleMapClick = useCallback(
     (coords: { lat: number; lng: number }) => {
       if (activeTab === 'navigation') {
+        // Prevent selecting start or end point unless "wskaż własne punkty" is checked
+        if (!useCustomCoords) {
+          return;
+        }
+
         if (pickingTarget === 'start') {
           setStartPoint(coords);
           setPickingTarget(null);
@@ -172,7 +178,7 @@ export default function Home() {
         setMobileView('panel');
       }
     },
-    [activeTab, pickingTarget]
+    [activeTab, useCustomCoords, pickingTarget]
   );
 
   // Handle Geolocation button in AddBarrierForm
@@ -336,6 +342,13 @@ export default function Home() {
                   onSetEndPoint={setEndPoint}
                   pickingTarget={pickingTarget}
                   onSetPickingTarget={handleSetPickingTarget}
+                  useCustomCoords={useCustomCoords}
+                  onToggleCustomCoords={(enabled) => {
+                    setUseCustomCoords(enabled);
+                    if (!enabled) {
+                      setPickingTarget(null);
+                    }
+                  }}
                   onSearchRoute={handleSearchRoute}
                   isLoading={isLoadingRoute}
                 />
@@ -403,6 +416,8 @@ export default function Home() {
                     <span className="text-red-700 dark:text-red-400 font-bold animate-pulse">
                       🏁 Dotknij mapy, aby wybrać Cel (B)
                     </span>
+                  ) : useCustomCoords ? (
+                    'Wskaż punkt A lub B w planerze, aby zaznaczyć na mapie'
                   ) : (
                     'Mapa Krakowa'
                   )

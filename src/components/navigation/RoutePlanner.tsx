@@ -11,6 +11,8 @@ interface RoutePlannerProps {
   onSetEndPoint: (coords: { lat: number; lng: number }) => void;
   pickingTarget: 'start' | 'end' | null;
   onSetPickingTarget: (target: 'start' | 'end' | null) => void;
+  useCustomCoords: boolean;
+  onToggleCustomCoords: (enabled: boolean) => void;
   onSearchRoute: (
     start: { lat: number; lng: number },
     end: { lat: number; lng: number },
@@ -49,12 +51,13 @@ export default function RoutePlanner({
   onSetEndPoint,
   pickingTarget,
   onSetPickingTarget,
+  useCustomCoords,
+  onToggleCustomCoords,
   onSearchRoute,
   isLoading,
 }: RoutePlannerProps) {
   const [profile, setProfile] = useState<NavigationProfile>('wheelchair');
   const [selectedPreset, setSelectedPreset] = useState<number>(0);
-  const [useCustomCoords, setUseCustomCoords] = useState(false);
 
   // Sync inputs with startPoint and endPoint
   const [startLat, setStartLat] = useState(startPoint ? startPoint.lat.toString() : '50.0664');
@@ -222,7 +225,21 @@ export default function RoutePlanner({
           <input
             type="checkbox"
             checked={useCustomCoords}
-            onChange={(e) => setUseCustomCoords(e.target.checked)}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              onToggleCustomCoords(checked);
+              if (!checked) {
+                const p = PRESET_ROUTES[selectedPreset];
+                if (p) {
+                  onSetStartPoint(p.start);
+                  onSetEndPoint(p.end);
+                  setStartLat(p.start.lat.toFixed(5));
+                  setStartLng(p.start.lng.toFixed(5));
+                  setEndLat(p.end.lat.toFixed(5));
+                  setEndLng(p.end.lng.toFixed(5));
+                }
+              }
+            }}
             className="rounded text-blue-600 focus:ring-blue-500"
           />
           <span>Wskaż własne punkty (kliknięcie na mapie / edycja)</span>
