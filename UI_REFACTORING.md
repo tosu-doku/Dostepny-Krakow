@@ -78,10 +78,8 @@ export const THEME_COLORS = {
   * W [`src/components/map/AccessibleMap.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/map/AccessibleMap.tsx) funkcja sprawdzająca `routeHexIds.has(tile.id)` w trybie wędrówki na żywo barwi heksagony trasy na kolor `#34d399` (obrys `#059669`), informując użytkownika o zaliczanych sektorach.
   * Heksagony mgły wojny poza trasą pozostają neutralne grafitowe (`#475569`).
 * **Pigułki barier i udogodnień (`createBarrierPillIcon`):**
-  * Zamiast zwykłych okrągłych kropek, na trasie renderowane są czytelne pigułki tekstowe:
-    * `✓ Podjazd` (jasnozielone tło, ciemnozielony tekst),
-    * `⚠️ Krawężnik 4 cm` (jasnożółte tło, pomarańczowy tekst),
-    * `⚠️ 4 stopnie` (czerwone/różowe tło ostrzegawcze).
+  * Pigułki ostrzegawcze i ułatwienia (`✓ Podjazd`, `⚠️ Krawężnik 4 cm`, `⚠️ 4 stopnie`) pojawiają się **wyłącznie na wyznaczonej trasie po jej skalkulowaniu**, nie zaśmiecając mapy podczas swobodnego przeglądania.
+  * Zamiast zwykłych kropek, na trasie renderowane są czytelne pigułki tekstowe z podwyższonym kontrastem.
 * **Pływające przyciski szybkiej akcji:**
   * Pływający przycisk ze zdjęciem i aparatem: `Dodaj zdjęcie / Przejmij sektor (+25 XP)`.
   * Akcentowany przycisk CTA `Apply` zamykający filtry i aplikujący zmiany.

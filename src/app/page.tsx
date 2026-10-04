@@ -289,7 +289,7 @@ export default function Home() {
               start={startPoint}
               end={endPoint}
               routeCoordinates={route?.geometry?.coordinates || []}
-              barriers={route?.all_barriers || allBarriers}
+              barriers={route?.all_barriers || []}
               selectedLocation={mobileTab === 'crowdsource' ? pickedLocation : null}
               onMapClick={handleMapClick}
               discoveredTileIds={discoveredTileIds}

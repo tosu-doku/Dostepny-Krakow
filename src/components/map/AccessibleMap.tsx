@@ -212,21 +212,24 @@ export default function AccessibleMap({
         .bindPopup('<strong>Wybrany punkt na mapie</strong>');
     }
 
-    // Add Barrier Markers
-    barriers.forEach((b) => {
-      const marker = L.marker([b.latitude, b.longitude], {
-        icon: createBarrierIcon(b),
-        title: `Bariera: ${b.barrier_type} (${b.address_description || ''})`,
-      }).bindPopup(createBarrierPopupHtml(b));
+    // Add Barrier Markers (warning widgets appear only on route after it has been calculated)
+    const hasRoute = routeCoordinates && routeCoordinates.length > 0;
+    if (hasRoute && barriers && barriers.length > 0) {
+      barriers.forEach((b) => {
+        const marker = L.marker([b.latitude, b.longitude], {
+          icon: createBarrierIcon(b),
+          title: `Bariera: ${b.barrier_type} (${b.address_description || ''})`,
+        }).bindPopup(createBarrierPopupHtml(b));
 
-      marker.on('click', () => {
-        if (onSelectBarrierRef.current) {
-          onSelectBarrierRef.current(b);
-        }
+        marker.on('click', () => {
+          if (onSelectBarrierRef.current) {
+            onSelectBarrierRef.current(b);
+          }
+        });
+
+        marker.addTo(markersLayer);
       });
-
-      marker.addTo(markersLayer);
-    });
+    }
 
     // Auto-fit bounds only when route coordinates key changes
     const currentRouteKey = routeCoordinates.length > 0
