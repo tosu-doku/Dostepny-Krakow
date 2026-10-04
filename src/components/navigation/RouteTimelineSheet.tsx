@@ -12,6 +12,8 @@ import {
   MapPin,
   ShieldCheck,
   Flag,
+  Info,
+  Layers,
 } from 'lucide-react';
 import BarrierImageGallery from '../common/BarrierImageGallery';
 
@@ -132,6 +134,7 @@ export default function RouteTimelineSheet({
           const isKerb = b.barrier_type === 'HIGH_KERB';
           const isCobblestone = b.barrier_type === 'COBBLESTONE_SURFACE';
           const isRamp = b.details?.has_ramp === true || b.barrier_type === 'STEEP_INCLINE';
+          const isNearby = b.is_nearby || (typeof b.distance_from_route === 'number' && b.distance_from_route > 8);
 
           // Estimated distance along route (distributed along total distance)
           const distanceMeters = Math.round(((idx + 1) / (barriers.length + 1)) * route.total_distance_meters);
@@ -143,7 +146,7 @@ export default function RouteTimelineSheet({
 
           if (isCobblestone) {
             nodeBg = 'bg-amber-600';
-            nodeIcon = <span className="text-xs">🏛️</span>;
+            nodeIcon = <Layers className="w-3.5 h-3.5" />;
             const s = b.details?.surface || '';
             const sType = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
             title = b.details?.name ? `${b.details.name} (${sType})` : sType;
@@ -171,6 +174,26 @@ export default function RouteTimelineSheet({
             description = `${rampDesc}${handrailDesc}${tactileDesc}`;
           }
 
+          // When obstacle is in the vicinity but not traversed directly, display in muted gray (not red/amber!)
+          if (isNearby) {
+            nodeBg = 'bg-slate-400';
+            nodeIcon = <Info className="w-3.5 h-3.5 text-white" />;
+            if (isStairs) {
+              const steps = b.details?.step_count ? `${b.details.step_count} st.` : 'schody';
+              title = b.address_description ? `${b.address_description} (obok trasy)` : `Schody (${steps}) – obok trasy`;
+              description = `Schody znajdują się w pobliżu (${b.distance_from_route || 15} m od toru, np. wejście do budynku). Wyznaczona trasa ich nie pokonuje.`;
+            } else if (isKerb) {
+              title = `${b.address_description || 'Krawężnik'} – w pobliżu trasy`;
+              description = `Krawężnik znajduje się obok trasy (${b.distance_from_route || 15} m), poza bezpośrednim torem przejścia.`;
+            } else if (isCobblestone) {
+              title = `${title} – obok trasy`;
+              description = `Nawierzchnia brukowana znajduje się w pobliżu trasy (${b.distance_from_route || 15} m obok).`;
+            } else {
+              title = `${title} – w pobliżu trasy`;
+              description = `Utrudnienie znajduje się w odległości ${b.distance_from_route || 15} m od wyznaczonego toru.`;
+            }
+          }
+
           return (
             <div
               key={b.id || idx}
@@ -191,8 +214,20 @@ export default function RouteTimelineSheet({
               {/* Content with hover highlight that NEVER affects axis alignment */}
               <div className="flex-1 min-w-0 pb-6 pt-0.5 p-2 -mt-1.5 rounded-xl group-hover:bg-slate-50 transition-colors flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-black text-slate-500">{distanceMeters} m</div>
-                  <div className="font-black text-base text-slate-900 truncate leading-snug">{title}</div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs font-black text-slate-500">
+                    <span>{distanceMeters} m</span>
+                    {isNearby && (
+                      <>
+                        <span>•</span>
+                        <span className="text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-full text-[11px]">
+                          W pobliżu trasy ({b.distance_from_route || 15} m obok)
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className={`font-black text-base truncate leading-snug mt-0.5 ${isNearby ? 'text-slate-700' : 'text-slate-900'}`}>
+                    {title}
+                  </div>
                   <p className="text-sm text-slate-600 mt-0.5 line-clamp-2 leading-relaxed font-medium">
                     {description}
                   </p>

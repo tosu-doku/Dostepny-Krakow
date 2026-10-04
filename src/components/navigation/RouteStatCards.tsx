@@ -37,7 +37,7 @@ export default function RouteStatCards({ route }: RouteStatCardsProps) {
           {durationMinutes} min
         </div>
         <div className="text-xs sm:text-sm font-bold text-slate-600 mt-0.5">
-          przyjazd {arrivalTime}
+          przybycie {arrivalTime}
         </div>
       </div>
 

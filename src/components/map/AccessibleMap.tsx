@@ -40,6 +40,7 @@ interface AccessibleMapProps {
   showSurfacesLayer?: boolean;
   startName?: string;
   endName?: string;
+  focusedBarrier?: Barrier | null;
 }
 
 export default function AccessibleMap({
@@ -62,6 +63,7 @@ export default function AccessibleMap({
   showSurfacesLayer = true,
   startName,
   endName,
+  focusedBarrier = null,
 }: AccessibleMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -96,6 +98,7 @@ export default function AccessibleMap({
   const surfacesLayerRef = useRef<L.GeoJSON | null>(null);
   const surfacesDataRef = useRef<any>(null);
   const prevRouteKeyRef = useRef<string>('');
+  const barrierMarkersRef = useRef<Map<string, L.Marker>>(new Map());
 
   const [showSurfaces, setShowSurfaces] = useState<boolean>(showSurfacesLayer);
 
@@ -169,7 +172,7 @@ export default function AccessibleMap({
               ${p.name || surfaceName}
             </div>
             <div style="font-size: 12px; color: #b45309; font-weight: 700;">
-              🏛️ ${surfaceName}
+              ${surfaceName}
             </div>
             <div style="margin-top: 4px; font-size: 11px; color: #64748b;">
               ⚠️ Utrudnienie dla wózków
@@ -250,6 +253,7 @@ export default function AccessibleMap({
     }
     routeLayer.clearLayers();
     markersLayer.clearLayers();
+    barrierMarkersRef.current.clear();
 
     // Draw Route Polyline
     let newBounds: L.LatLngBounds | null = null;
@@ -348,6 +352,10 @@ export default function AccessibleMap({
             onSelectBarrierRef.current(b);
           }
         });
+
+        if (b.id) {
+          barrierMarkersRef.current.set(b.id, marker);
+        }
 
         marker.addTo(markersLayer);
       });
@@ -548,6 +556,33 @@ export default function AccessibleMap({
       }
     }
   }, [showSurfaces]);
+
+  // 9. Focus on selected barrier when triggered from timeline
+  useEffect(() => {
+    if (!focusedBarrier || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    const timer = setTimeout(() => {
+      try {
+        map.invalidateSize();
+        map.setView([focusedBarrier.latitude, focusedBarrier.longitude], 18, { animate: false });
+
+        const marker = focusedBarrier.id ? barrierMarkersRef.current.get(focusedBarrier.id) : null;
+        if (marker) {
+          marker.openPopup();
+        } else {
+          L.popup()
+            .setLatLng([focusedBarrier.latitude, focusedBarrier.longitude])
+            .setContent(createBarrierPopupHtml(focusedBarrier))
+            .openOn(map);
+        }
+      } catch (err) {
+        console.warn('Error focusing on barrier:', err);
+      }
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [focusedBarrier]);
 
   const handleZoomIn = () => {
     mapInstanceRef.current?.zoomIn();

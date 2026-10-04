@@ -74,6 +74,7 @@ export interface Barrier {
   image_url?: string | null;
   created_by?: string | null;
   distance_from_route?: number;
+  is_nearby?: boolean;
 }
 
 export interface CreateBarrierInput {

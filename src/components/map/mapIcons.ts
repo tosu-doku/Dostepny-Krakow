@@ -62,18 +62,20 @@ export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
   const isKerb = barrier.barrier_type === 'HIGH_KERB';
   const isCobblestone = barrier.barrier_type === 'COBBLESTONE_SURFACE';
   const isRamp = barrier.details?.has_ramp === true || barrier.barrier_type === 'STEEP_INCLINE';
+  const isNearby = barrier.is_nearby || (typeof barrier.distance_from_route === 'number' && barrier.distance_from_route > 8);
 
   let bg = '#f59e0b';
   let text = '#0f172a';
   let icon = '⚠️';
   let label = barrier.address_description?.slice(0, 24) || barrier.barrier_type;
 
+  const s = barrier.details?.surface || '';
+  const surfaceText = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
+
   if (isCobblestone) {
     bg = '#d97706';
     text = '#ffffff';
-    icon = '🏛️';
-    const s = barrier.details?.surface || '';
-    const surfaceText = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
+    icon = '';
     label = surfaceText;
   } else if (isRamp) {
     bg = '#16a34a';
@@ -92,6 +94,26 @@ export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
     icon = '⚠️';
     const steps = barrier.details?.step_count ? `${barrier.details.step_count} st.` : 'Schody';
     label = barrier.details?.has_ramp ? `${steps} (rampa)` : steps;
+  }
+
+  // If obstacle is near the route but not traversed directly, display as muted slate gray
+  if (isNearby) {
+    bg = '#64748b'; // slate-500 muted gray
+    text = '#ffffff';
+    if (isStairs) {
+      icon = 'ℹ️';
+      const steps = barrier.details?.step_count ? `${barrier.details.step_count} st.` : 'Schody';
+      label = `${steps} (obok)`;
+    } else if (isKerb) {
+      icon = 'ℹ️';
+      label = 'Krawężnik (obok)';
+    } else if (isCobblestone) {
+      icon = '';
+      label = `${surfaceText} (obok)`;
+    } else {
+      icon = 'ℹ️';
+      label = `${label} (obok)`;
+    }
   }
 
   return L.divIcon({
@@ -113,8 +135,9 @@ export function createBarrierPillIcon(barrier: Barrier): L.DivIcon {
         pointer-events:auto;
         cursor:pointer;
         transform:translate(-50%, -50%);
+        ${isNearby ? 'opacity:0.9;' : ''}
       ">
-        <span style="font-size:12px;">${icon}</span>
+        ${icon ? `<span style="font-size:12px;">${icon}</span>` : ''}
         <span>${label}</span>
       </div>
     `,
@@ -137,6 +160,7 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
   const isStairs = barrier.barrier_type === 'STAIRS';
   const isCobblestone = barrier.barrier_type === 'COBBLESTONE_SURFACE';
   const isKerb = barrier.barrier_type === 'HIGH_KERB';
+  const isNearby = barrier.is_nearby || (typeof barrier.distance_from_route === 'number' && barrier.distance_from_route > 8);
 
   let titleBadge = '⚠️ Utrudnienie architektoniczne';
   let titleColor = '#d97706';
@@ -149,7 +173,7 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
   } else if (isCobblestone) {
     const s = barrier.details?.surface || '';
     const surfaceName = s === 'sett' ? 'Kostka rzędowa' : s === 'cobblestone' ? 'Kocie łby' : 'Kamień polny';
-    titleBadge = `🏛️ ${surfaceName}`;
+    titleBadge = surfaceName;
     titleColor = '#b45309';
     badgeBg = '#fef3c7';
   } else if (isKerb) {
@@ -158,7 +182,17 @@ export function createBarrierPopupHtml(barrier: Barrier): string {
     badgeBg = '#fef9c3';
   }
 
+  if (isNearby) {
+    titleColor = '#475569';
+    badgeBg = '#f1f5f9';
+    titleBadge = `${titleBadge} • w pobliżu trasy`;
+  }
+
   const items: string[] = [];
+
+  if (isNearby) {
+    items.push(`<li><span style="color:#64748b;font-weight:700;">📍 Obok trasy (${barrier.distance_from_route || 15} m od toru) – nie blokuje bezpośrednio Twojego przejścia.</span></li>`);
+  }
 
   if (isStairs) {
     if (barrier.details?.step_count) {

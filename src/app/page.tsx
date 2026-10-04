@@ -62,6 +62,12 @@ export default function Home() {
   // Exploration Mode — persisted in localStorage
   const [explorationModeEnabled, setExplorationModeEnabled] = useState<boolean>(false);
   const [selectedQuest, setSelectedQuest] = useState<DailyQuest | null>(null);
+  const [focusedBarrier, setFocusedBarrier] = useState<Barrier | null>(null);
+
+  const handleSelectBarrier = useCallback((barrier: Barrier) => {
+    setFocusedBarrier({ ...barrier });
+    setMobileTab('map');
+  }, []);
 
   // Hydrate exploration mode from localStorage on mount
   useEffect(() => {
@@ -396,6 +402,7 @@ export default function Home() {
               barriers={route?.all_barriers || []}
               selectedLocation={mobileTab === 'crowdsource' ? pickedLocation : null}
               onMapClick={handleMapClick}
+              onSelectBarrier={setFocusedBarrier}
               discoveredTileIds={discoveredTileIds}
               auditedTileIds={auditedTileIds}
               showDiscoveryGrid={showDiscoveryGrid}
@@ -404,6 +411,7 @@ export default function Home() {
               isLiveLocationActive={liveLocationEnabled}
               activeQuest={explorationModeEnabled ? ACTIVE_QUEST : null}
               onSelectQuest={(quest) => setSelectedQuest(quest)}
+              focusedBarrier={focusedBarrier}
             />
           </div>
 
@@ -426,14 +434,14 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Magenta CTA "Apply / Zobacz trasę" if route active (Attachment 1) */}
+            {/* Magenta CTA "Zobacz punkty na trasie" if route active (Attachment 1) */}
             {route && (
               <button
                 type="button"
                 onClick={() => setMobileTab('route')}
                 className="w-full h-12 bg-[#d90479] hover:bg-[#be185d] active:scale-[0.99] text-white font-extrabold text-sm rounded-full shadow-lg shadow-pink-600/30 flex items-center justify-center gap-2 cursor-pointer pointer-events-auto transition-all"
               >
-                <span>Apply – Zobacz punkty na trasie</span>
+                <span>Zobacz punkty na trasie</span>
               </button>
             )}
           </div>
@@ -468,6 +476,7 @@ export default function Home() {
                 route={route}
                 startName={startName}
                 endName={endName}
+                onSelectBarrier={handleSelectBarrier}
               />
             </div>
           ) : (

@@ -115,5 +115,47 @@ describe('Routing & Accessibility Service', () => {
       // COBBLESTONE_SURFACE adds +45s for wheelchair
       expect(penalizedDuration).toBe(baseDuration + 45);
     });
+
+    it('does not penalize duration for nearby off-path obstacles (is_nearby: true)', () => {
+      const distance = 400;
+      const nearbyStairs: Barrier = {
+        id: 'stairs-nearby',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        barrier_type: 'STAIRS',
+        latitude: 50.0665,
+        longitude: 19.944,
+        details: { step_count: 8 },
+        source: 'OSM',
+        status: 'VERIFIED',
+        confidence_score: 0.9,
+        last_verified_at: new Date().toISOString(),
+        is_nearby: true,
+        distance_from_route: 18,
+      };
+
+      const baseDuration = calculateRealisticDurationSeconds(distance, 'wheelchair', []);
+      const nearbyDuration = calculateRealisticDurationSeconds(distance, 'wheelchair', [nearbyStairs]);
+
+      // Should not add 120s penalty because it is off-path
+      expect(nearbyDuration).toBe(baseDuration);
+    });
+  });
+
+  describe('Polyline Segment Distance (minDistanceToPolyline)', () => {
+    it('calculates accurate perpendicular distance to intermediate point along segment', async () => {
+      const { minDistanceToPolyline } = await import('@/services/routing');
+      // Segment from (50.0600, 19.9400) to (50.0600, 19.9500)
+      const polyline: [number, number][] = [
+        [19.9400, 50.0600],
+        [19.9500, 50.0600],
+      ];
+      // Point midway along segment, offset by ~0.0001 deg latitude (~11 meters north)
+      const point = { lat: 50.0601, lng: 19.9450 };
+      const dist = minDistanceToPolyline(point, polyline);
+
+      expect(dist).toBeGreaterThan(9);
+      expect(dist).toBeLessThan(13);
+    });
   });
 });

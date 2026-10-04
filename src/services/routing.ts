@@ -23,13 +23,60 @@ export function calculateDistanceMeters(lat1: number, lon1: number, lat2: number
 }
 
 /**
- * Determines closest distance from a point to a polyline of coordinates.
+ * Calculates perpendicular distance in meters from point P to segment AB.
  */
-function minDistanceToPolyline(point: { lat: number; lng: number }, polyline: [number, number][]): number {
+function distancePointToSegmentMeters(
+  pLat: number,
+  pLng: number,
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number
+): number {
+  const midLatRad = ((pLat + (aLat + bLat) / 2) / 2) * (Math.PI / 180);
+  const cosLat = Math.cos(midLatRad);
+  const metersPerDegLat = 111139;
+  const metersPerDegLng = 111139 * cosLat;
+
+  const px = pLng * metersPerDegLng;
+  const py = pLat * metersPerDegLat;
+  const ax = aLng * metersPerDegLng;
+  const ay = aLat * metersPerDegLat;
+  const bx = bLng * metersPerDegLng;
+  const by = bLat * metersPerDegLat;
+
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+
+  if (lenSq === 0) {
+    return Math.hypot(px - ax, py - ay);
+  }
+
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  const projX = ax + t * dx;
+  const projY = ay + t * dy;
+
+  return Math.hypot(px - projX, py - projY);
+}
+
+/**
+ * Determines closest distance from a point to a polyline in meters.
+ */
+export function minDistanceToPolyline(point: { lat: number; lng: number }, polyline: [number, number][]): number {
+  if (!polyline || polyline.length === 0) return Infinity;
+  if (polyline.length === 1) {
+    return calculateDistanceMeters(point.lat, point.lng, polyline[0][1], polyline[0][0]);
+  }
+
   let min = Infinity;
-  for (const [lng, lat] of polyline) {
-    const dist = calculateDistanceMeters(point.lat, point.lng, lat, lng);
-    if (dist < min) min = dist;
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const [aLng, aLat] = polyline[i];
+    const [bLng, bLat] = polyline[i + 1];
+    const dist = distancePointToSegmentMeters(point.lat, point.lng, aLat, aLng, bLat, bLng);
+    if (dist < min) {
+      min = dist;
+    }
   }
   return min;
 }
@@ -62,8 +109,10 @@ export function calculateRealisticDurationSeconds(
   const speed = getProfileSpeedMps(profile);
   let baseSeconds = distanceMeters / speed;
 
-  // Add realistic delay for each obstacle
+  // Add realistic delay for each obstacle directly traversed on the route
   for (const b of barriers) {
+    if (b.is_nearby) continue;
+
     if (b.barrier_type === 'STAIRS') {
       baseSeconds += profile === 'wheelchair' ? 120 : 45;
     } else if (b.barrier_type === 'HIGH_KERB') {
@@ -358,6 +407,15 @@ export async function calculateAccessibleRoute(
   // Query barriers along the whole route from Supabase PostGIS
   const barriersAlongRoute = await getBarriersAlongRoute(fullCoordinates, 35.0);
 
+  // Compute exact perpendicular distance from each barrier to the route polyline
+  barriersAlongRoute.forEach((b) => {
+    const dist = minDistanceToPolyline({ lat: b.latitude, lng: b.longitude }, fullCoordinates);
+    b.distance_from_route = Math.round(dist);
+    // If barrier is further than 8.0 meters from route centerline, it is adjacent/nearby (e.g. entrance stairs),
+    // but the route does NOT pass through it!
+    b.is_nearby = dist > 8.0;
+  });
+
   // Build route steps with AGENTS.md rule:
   // "NIGDY nie traktuj braku danych w bazie jako faktu, że przeszkody nie ma.
   // Jeśli trasa nie ma danych o krawężnikach/schodach, oznacz segment jako: Stan nieznany."
@@ -401,8 +459,10 @@ export async function calculateAccessibleRoute(
         unverifiedStepsCount++;
       }
 
-      // Check for high-risk barriers for selected profile
+      // Check for high-risk barriers for selected profile (only traversed obstacles count as high-risk)
       const hasHighRisk = stepBarriers.some((b) => {
+        if (b.is_nearby) return false;
+
         if (profile === 'wheelchair') {
           return (
             (b.barrier_type === 'STAIRS' && !b.details.has_ramp) ||
