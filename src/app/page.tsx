@@ -378,11 +378,11 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setMobileTab('route')}
-                  className="w-full min-h-[48px] px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-slate-200 text-slate-700 hover:text-slate-900 flex items-center gap-3 text-sm font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99]"
+                  className="w-full min-h-[54px] px-4 sm:px-5 rounded-full bg-white/98 backdrop-blur-md shadow-lg shadow-purple-900/10 border-2 border-purple-300 text-slate-900 hover:border-purple-500 hover:bg-purple-50/40 flex items-center gap-3.5 pointer-events-auto cursor-pointer transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-purple-600"
                 >
-                  <Search className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span className="flex-1 text-left truncate">Dokąd chcesz dotrzeć w Krakowie?</span>
-                  <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-purple-100 text-purple-800 shrink-0">
+                  <Search className="w-5 h-5 text-purple-700 shrink-0 stroke-[2.5]" aria-hidden="true" />
+                  <span className="flex-1 text-left text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">Dokąd dziś?</span>
+                  <span className="text-xs sm:text-sm font-black px-3.5 py-1.5 rounded-full bg-purple-600 text-white shadow-xs shrink-0">
                     Wyznacz trasę
                   </span>
                 </button>
