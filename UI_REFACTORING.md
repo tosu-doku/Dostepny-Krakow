@@ -132,6 +132,22 @@ export const THEME_COLORS = {
     * Wymagane poręcze przy schodach,
     * Unikanie nawierzchni z kostki brukowej.
 
+### Załącznik 4: Eksploracja, Poziom Użytkownika Light Theme & Misje Codzienne (2x XP)
+* **Przebudowa Poziomu Użytkownika na Light Theme ([`src/components/gamification/DiscoveryBanner.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/gamification/DiscoveryBanner.tsx)):**
+  * Usunięto przestarzały, ciemny gradient na rzecz czystego, kontrastowego białego kontenera (`bg-white border-slate-200/90 shadow-sm rounded-3xl`).
+  * Ergonomiczny układ mobilny: duża plakietka poziomu (`Poziom X`), tytuł rangi, status GPS/Planer, licznik punktów XP oraz pasek postępu.
+  * Karty metryk siatki Uber H3 (odkryte komórki i zaudytowane zdjęcia).
+* **2 Misje Dnia z Mnożnikiem 2x XP:**
+  * **Misja 1:** *„Wejście do Parku Krakowskiego (Krowodrza)”* – zdjęcia schodów, +200 XP (mnożnik 2x).
+  * **Misja 2:** *„Odkryj 5 nowych kafelków w centrum”* – eksploracja mgły wojny, +100 XP (mnożnik 2x).
+* **Modal Szczegółów Misji ([`src/components/gamification/DailyQuestModal.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/gamification/DailyQuestModal.tsx)):**
+  * Wdrożono wysuwany arkusz dolny (*Bottom Sheet*) dokładnie według Załącznika 4:
+    * Etykieta odległości: `18 m od Ciebie`,
+    * Tytuł i kategoria w zaokrąglonym magentowym bloczku z ikoną schodów,
+    * Różowy panel jakości: `2 dotychczasowe sprawdzenia`, odznaka `Bardzo słabo sprawdzone`, 5-segmentowy pasek postępu i uzasadnienie wartości zdjęcia,
+    * Etykiety premii: `🏆 +200 XP za wykonanie zadania`, `Premia za rzadkie miejsce`,
+    * Magentowy przycisk CTA: `Zrób zdjęcie i zalicz zadanie (Zajmie około 30 sekund)`.
+
 ---
 
 ## 🏛️ 4. Dolny Pasek Nawigacyjny (`BottomNavigation.tsx`)
@@ -139,9 +155,9 @@ export const THEME_COLORS = {
 Aplikacja mobilna posiada stały, ergonomiczny pasek dolny z 5 zakładkami:
 1. **Mapa (`map`):** Pełnoekranowy widok Krakowa z siatką H3, pozycją GPS, mgłą wojny i punktami barier.
 2. **Trasa (`route`):** Widok wyszukiwania i aktywnej nawigacji z banerem manewru i osią czasu.
-3. **Liga (`league`):** Tablica liderów grywalizacji, ranking użytkowników i statystyki odkrytych heksagonów.
-4. **Dodaj (`add`):** Szybkie zgłoszenie nowej przeszkody z geolokalizacją i uploadem zdjęcia do Supabase Storage.
-5. **Profil (`profile`):** Informacje o użytkowniku, zdobyte punkty XP, ranga i historia audytów.
+3. **Eksploracja (`leaderboard`):** Poziom użytkownika w Light Theme, misje codzienne (2x XP) i statystyki heksagonów H3 (ikona `Compass`).
+4. **Dodaj (`crowdsource`):** Szybkie zgłoszenie nowej przeszkody z geolokalizacją i uploadem zdjęcia do Supabase Storage.
+5. **Profil (`profile`):** Informacje o użytkowniku, ranga, ustawienia konta i tryb GPS na żywo.
 
 ---
 
@@ -150,15 +166,17 @@ Aplikacja mobilna posiada stały, ergonomiczny pasek dolny z 5 zakładkami:
 | Plik | Typ | Rola w Systemie |
 | :--- | :--- | :--- |
 | `src/constants/theme.ts` | **Nowy** | Centralna definicja Design Tokens (kolory, typografia, cienie, promienie). |
-| `src/components/layout/BottomNavigation.tsx` | **Nowy** | Mobilny dolny pasek nawigacyjny z 5 zakładkami i obsługą ARIA. |
+| `src/components/layout/BottomNavigation.tsx` | Modyfikacja | Mobilny dolny pasek nawigacyjny z 5 zakładkami (zakładka *Eksploracja* z ikoną `Compass`). |
+| `src/components/gamification/DailyQuestModal.tsx` | **Nowy** | Wysuwany arkusz misji dnia (Załącznik 4) z 5 segmentami, odznaką i CTA do zdjęcia. |
+| `src/components/gamification/DiscoveryBanner.tsx` | Modyfikacja | Przepisanie na czysty Light Theme, karty mobilne i listę 2 misji dziennych z mnożnikiem 2x XP. |
 | `src/components/navigation/RouteSearchCard.tsx` | **Nowy** | Karta „Utwórz trasę” z polami-pigułkami i przyciskiem filtrów. |
 | `src/components/navigation/AccessibilityFilterModal.tsx` | **Nowy** | Modal wyboru profilu i parametrów dostępności trasy ze spójną kolorystyką. |
 | `src/components/navigation/TurnBanner.tsx` | **Nowy** | Górny ciemny baner manewrów turn-by-turn. |
 | `src/components/navigation/RouteStatCards.tsx` | **Nowy** | Pływające kafelki z czasem, godziną dotarcia i dystansem. |
 | `src/components/navigation/RouteTimelineSheet.tsx` | **Nowy** | Wysuwany arkusz barier z precyzyjnie wyrównaną osią pionową (`w-8 items-center`) i lektorem Web Speech API. |
-| `src/components/map/AccessibleMap.tsx` | Modyfikacja | Zielone heksagony trasy H3, pigułki przeszkód i pływające przyciski akcji. |
+| `src/components/map/AccessibleMap.tsx` | Modyfikacja | Zielone heksagony trasy H3, ergonomiczne kontrolki zoom po prawej i filtry barier trasy. |
 | `src/components/map/mapIcons.ts` | Modyfikacja | Generator ikon Leaflet `createBarrierPillIcon` w formie zaokrąglonych etykiet. |
-| `src/app/page.tsx` | Modyfikacja | Integracja mobilnego kontenera portrait, zakładek i nowych komponentów nawigacji. |
+| `src/app/page.tsx` | Modyfikacja | Integracja mobilnego kontenera portrait, zakładki Eksploracja, pigułki misji na mapie. |
 | `src/app/globals.css` | Modyfikacja | Wyłączenie ciemnego motywu, czyste tła, style typografii Plus Jakarta Sans. |
 | `src/app/layout.tsx` | Modyfikacja | Podpięcie czcionki Google Font `Plus_Jakarta_Sans` z podzbiorem `latin-ext`. |
 

@@ -20,6 +20,8 @@ import {
   Camera,
   AlertCircle,
   Trophy,
+  Compass,
+  Flame,
   ChevronLeft,
 } from 'lucide-react';
 
@@ -262,17 +264,34 @@ export default function Home() {
               </>
             ) : (
               /* Search Trigger Pill if no route */
-              <button
-                type="button"
-                onClick={() => setMobileTab('route')}
-                className="w-full h-12 px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-slate-200 text-slate-600 hover:text-slate-900 flex items-center gap-3 text-xs font-semibold pointer-events-auto cursor-pointer transition-all active:scale-[0.99]"
-              >
-                <Search className="w-4 h-4 text-purple-600" />
-                <span className="flex-1 text-left truncate">Dokąd chcesz dotrzeć w Krakowie?</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-                  Wyznacz trasę
-                </span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMobileTab('route')}
+                  className="w-full h-12 px-4 rounded-full bg-white/95 backdrop-blur-md shadow-md border border-slate-200 text-slate-600 hover:text-slate-900 flex items-center gap-3 text-xs font-semibold pointer-events-auto cursor-pointer transition-all active:scale-[0.99]"
+                >
+                  <Search className="w-4 h-4 text-purple-600" />
+                  <span className="flex-1 text-left truncate">Dokąd chcesz dotrzeć w Krakowie?</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                    Wyznacz trasę
+                  </span>
+                </button>
+
+                {/* Nearby Daily Quest Indicator Pill (Attachment 4) */}
+                <button
+                  type="button"
+                  onClick={() => setMobileTab('leaderboard')}
+                  className="w-full px-3.5 py-2 rounded-2xl bg-white/95 backdrop-blur-md shadow-md border border-pink-200/90 text-slate-800 flex items-center justify-between text-xs font-bold pointer-events-auto cursor-pointer transition-all active:scale-[0.99] hover:bg-pink-50/50"
+                >
+                  <span className="flex items-center gap-2 text-slate-900 truncate">
+                    <span className="w-2 h-2 rounded-full bg-[#d90479] animate-pulse shrink-0" />
+                    <span className="truncate">Misja dnia: Park Krakowski (Krowodrza)</span>
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-pink-100 text-[#d90479] shrink-0">
+                    +200 XP • 2x
+                  </span>
+                </button>
+              </>
             )}
 
             {/* Picking Target Notice */}
@@ -380,13 +399,15 @@ export default function Home() {
           )}
         </div>
 
-        {/* MAIN TAB 3: LIGA (Gamification & Kraków Discovery Stats) */}
+        {/* MAIN TAB 3: EKSPLORACJA (Gamification, Daily Quests & Kraków Discovery Stats) */}
         <div className={`p-4 flex-1 flex flex-col gap-4 ${mobileTab === 'leaderboard' ? 'block' : 'hidden'}`}>
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Trophy className="w-6 h-6 text-amber-500" />
+          <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+            <span className="w-9 h-9 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+              <Compass className="w-5 h-5" />
+            </span>
             <div>
-              <h2 className="text-lg font-extrabold text-slate-900">Liga & Eksploracja</h2>
-              <p className="text-xs text-slate-500">Rozpraszaj mgłę wojny i audytuj dostępność Krakowa</p>
+              <h2 className="text-lg font-extrabold text-slate-900 leading-tight">Eksploracja & Zadania</h2>
+              <p className="text-xs text-slate-500">Rozpraszaj mgłę wojny i realizuj misje z mnożnikiem 2x XP</p>
             </div>
           </div>
 
@@ -398,6 +419,10 @@ export default function Home() {
             auditedPhotosCount={auditedTileIds.length}
             liveLocationEnabled={liveLocationEnabled}
             gpsStatusMessage={gpsStatusMessage}
+            onNavigateToCrowdsource={(coords) => {
+              if (coords) setPickedLocation(coords);
+              setMobileTab('crowdsource');
+            }}
           />
         </div>
 

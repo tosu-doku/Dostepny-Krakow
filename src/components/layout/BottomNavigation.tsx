@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Map as MapIcon, Route, Trophy, Camera, User } from 'lucide-react';
+import { Map as MapIcon, Route, Compass, Camera, User } from 'lucide-react';
 
 export type ActiveMobileTab = 'map' | 'route' | 'leaderboard' | 'crowdsource' | 'profile';
 
@@ -20,7 +20,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'map', label: 'Mapa', icon: MapIcon },
   { id: 'route', label: 'Trasa', icon: Route },
-  { id: 'leaderboard', label: 'Liga', icon: Trophy },
+  { id: 'leaderboard', label: 'Eksploracja', icon: Compass },
   { id: 'crowdsource', label: 'Dodaj', icon: Camera },
   { id: 'profile', label: 'Profil', icon: User },
 ];
