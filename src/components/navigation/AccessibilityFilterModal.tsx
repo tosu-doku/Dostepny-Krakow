@@ -17,15 +17,28 @@ interface ProfileOption {
   subtitle: string;
   icon: React.ComponentType<{ className?: string }>;
   accentColor: string;
+  selectedBorder: string;
+  checkBg: string;
 }
 
 const PROFILES: ProfileOption[] = [
   {
+    id: 'foot_walking',
+    title: 'Pieszy (Domyślny)',
+    subtitle: 'Optymalna miejska trasa piesza (~4.3 km/h) bez ograniczeń architektonicznych.',
+    icon: Footprints,
+    accentColor: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+    selectedBorder: 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-600/30',
+    checkBg: 'bg-emerald-600 text-white',
+  },
+  {
     id: 'wheelchair',
     title: 'Wózek inwalidzki',
-    subtitle: 'Unikanie schodów, wysokich krawężników powyżej 4 cm i stromych podjazdów.',
+    subtitle: 'Unikanie schodów, krawężniki max 4 cm, preferencja łagodnych podjazdów i ramp.',
     icon: Accessibility,
     accentColor: 'text-blue-600 bg-blue-50 border-blue-200',
+    selectedBorder: 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-600/30',
+    checkBg: 'bg-blue-600 text-white',
   },
   {
     id: 'stroller',
@@ -33,6 +46,8 @@ const PROFILES: ProfileOption[] = [
     subtitle: 'Nacisk na łagodne rampy, szerokie chodniki i omijanie uszkodzonych nawierzchni.',
     icon: Baby,
     accentColor: 'text-pink-600 bg-pink-50 border-pink-200',
+    selectedBorder: 'border-pink-600 bg-pink-50/60 ring-2 ring-pink-600/30',
+    checkBg: 'bg-pink-600 text-white',
   },
   {
     id: 'visually_impaired',
@@ -40,13 +55,8 @@ const PROFILES: ProfileOption[] = [
     subtitle: 'Wsparcie pasów fakturowych, sygnalizacji dźwiękowej i stałych punktów odniesienia.',
     icon: Eye,
     accentColor: 'text-amber-600 bg-amber-50 border-amber-200',
-  },
-  {
-    id: 'foot_walking',
-    title: 'Pieszy (standard)',
-    subtitle: 'Optymalna miejska trasa piesza bez ograniczeń architektonicznych.',
-    icon: Footprints,
-    accentColor: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+    selectedBorder: 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/30',
+    checkBg: 'bg-amber-500 text-white',
   },
 ];
 
@@ -112,7 +122,7 @@ export default function AccessibilityFilterModal({
                 }}
                 className={`w-full p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3.5 ${
                   isSelected
-                    ? 'border-purple-600 bg-purple-50/60 shadow-xs ring-2 ring-purple-600/30'
+                    ? `${p.selectedBorder} shadow-xs`
                     : 'border-slate-200 bg-white hover:bg-slate-50'
                 }`}
               >
@@ -123,7 +133,7 @@ export default function AccessibilityFilterModal({
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-slate-900">{p.title}</span>
                     {isSelected && (
-                      <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center shrink-0">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${p.checkBg}`}>
                         <Check className="w-3 h-3 stroke-[3]" />
                       </span>
                     )}

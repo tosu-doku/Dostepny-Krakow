@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { NavigationProfile } from '@/types/routing';
 import { Search, SlidersHorizontal, MapPin } from 'lucide-react';
 import AccessibilityFilterModal from './AccessibilityFilterModal';
+import ProfilePreferenceWidget from './ProfilePreferenceWidget';
 
 interface RouteSearchCardProps {
   startPoint: { lat: number; lng: number } | null;
@@ -65,7 +66,7 @@ export default function RouteSearchCard({
   onSearchRoute,
   isLoading,
 }: RouteSearchCardProps) {
-  const [profile, setProfile] = useState<NavigationProfile>('wheelchair');
+  const [profile, setProfile] = useState<NavigationProfile>('foot_walking');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedPresetIdx, setSelectedPresetIdx] = useState<number>(0);
 
@@ -132,13 +133,22 @@ export default function RouteSearchCard({
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#4c0519]">
           Utwórz trasę
         </h1>
-        {profile !== 'foot_walking' && (
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-            {profile === 'wheelchair' && '♿ Wózek inwalidzki'}
-            {profile === 'stroller' && '👶 Wózek dziecięcy'}
-            {profile === 'visually_impaired' && '👁️ Osoba niedowidząca'}
-          </span>
-        )}
+        <span
+          className={`text-[11px] font-extrabold px-3 py-1 rounded-full border shadow-2xs flex items-center gap-1.5 ${
+            profile === 'foot_walking'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+              : profile === 'wheelchair'
+              ? 'bg-blue-50 text-blue-800 border-blue-300'
+              : profile === 'stroller'
+              ? 'bg-pink-50 text-pink-800 border-pink-300'
+              : 'bg-amber-50 text-amber-800 border-amber-300'
+          }`}
+        >
+          {profile === 'foot_walking' && '🚶 Pieszy'}
+          {profile === 'wheelchair' && '♿ Wózek inw.'}
+          {profile === 'stroller' && '👶 Dziecięcy'}
+          {profile === 'visually_impaired' && '👁️ Niedowidzący'}
+        </span>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
@@ -182,6 +192,15 @@ export default function RouteSearchCard({
             placeholder="Wybierz końcowy punkt"
             aria-label="Wybierz końcowy punkt trasy"
             className="w-full h-13 pl-11 pr-4 bg-white border border-slate-300 rounded-full text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all shadow-xs"
+          />
+        </div>
+
+        {/* Profile & Accessibility Preferences Widget */}
+        <div className="pt-1">
+          <ProfilePreferenceWidget
+            selectedProfile={profile}
+            onSelectProfile={setProfile}
+            onOpenSettings={() => setIsFilterModalOpen(true)}
           />
         </div>
 

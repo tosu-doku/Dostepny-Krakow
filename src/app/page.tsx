@@ -145,7 +145,7 @@ export default function Home() {
       fetchBarriers();
       fetchDiscoveryTiles();
       if (startPoint && endPoint) {
-        handleSearchRoute(startPoint, endPoint, route?.profile || 'wheelchair');
+        handleSearchRoute(startPoint, endPoint, route?.profile || 'foot_walking');
       }
     },
     [fetchBarriers, fetchDiscoveryTiles, startPoint, endPoint, route?.profile]

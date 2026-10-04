@@ -11,6 +11,7 @@ import {
   ChevronRight,
   MapPin,
   ShieldCheck,
+  Flag,
 } from 'lucide-react';
 import BarrierImageGallery from '../common/BarrierImageGallery';
 
@@ -64,8 +65,26 @@ export default function RouteTimelineSheet({
       {/* Header (Attachment 2) */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-            {barriers.length + 2} punkty na trasie
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+              {barriers.length + 2} punkty na trasie
+            </span>
+            <span
+              className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-2xs ${
+                route.profile === 'foot_walking'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : route.profile === 'wheelchair'
+                  ? 'bg-blue-50 text-blue-800 border-blue-300'
+                  : route.profile === 'stroller'
+                  ? 'bg-pink-50 text-pink-800 border-pink-300'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
+              }`}
+            >
+              {route.profile === 'foot_walking' && '🚶 Pieszy'}
+              {route.profile === 'wheelchair' && '♿ Wózek inw.'}
+              {route.profile === 'stroller' && '👶 Dziecięcy'}
+              {route.profile === 'visually_impaired' && '👁️ Niedowidzący'}
+            </span>
           </div>
           <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight mt-0.5">
             Co czeka Cię po drodze
@@ -79,21 +98,22 @@ export default function RouteTimelineSheet({
         </div>
       </div>
 
-      {/* Timeline List (Attachment 2) */}
-      <div className="relative pl-6 space-y-5 my-2">
-        {/* Continuous vertical connecting line */}
-        <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-slate-200" aria-hidden="true" />
-
+      {/* Timeline List (Attachment 2 - Perfectly Vertically Aligned Axis) */}
+      <div className="flex flex-col my-1">
         {/* 1. Start Item */}
-        <div className="relative flex items-start gap-3 group">
-          {/* Timeline node */}
-          <div className="absolute -left-6 w-6 h-6 rounded-full bg-sky-600 text-white flex items-center justify-center text-xs font-bold shadow-xs z-10 ring-4 ring-white">
-            <MapPin className="w-3.5 h-3.5" />
+        <div className="flex items-stretch gap-3.5 group">
+          {/* Timeline Axis Column: perfectly centers node and line */}
+          <div className="flex flex-col items-center shrink-0 w-8">
+            <div className="w-7 h-7 rounded-full bg-sky-600 text-white flex items-center justify-center text-xs font-bold shadow-xs z-10 ring-4 ring-white shrink-0">
+              <MapPin className="w-3.5 h-3.5" />
+            </div>
+            <div className="w-0.5 bg-slate-200 flex-1 my-1" aria-hidden="true" />
           </div>
 
-          <div className="flex-1 min-w-0">
+          {/* Content */}
+          <div className="flex-1 min-w-0 pb-6 pt-0.5">
             <div className="text-[11px] font-bold text-slate-400">0 m</div>
-            <div className="font-bold text-sm text-slate-900">
+            <div className="font-bold text-sm text-slate-900 leading-snug">
               Start: {route.steps?.[0]?.instruction || 'Początek trasy'}
             </div>
             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
@@ -142,37 +162,47 @@ export default function RouteTimelineSheet({
                 if (onSelectBarrier) onSelectBarrier(b);
                 setSelectedBarrierForGallery(b);
               }}
-              className="relative flex items-start gap-3 cursor-pointer p-1.5 -ml-1.5 rounded-xl hover:bg-slate-50 transition-colors"
+              className="flex items-stretch gap-3.5 cursor-pointer group"
             >
-              {/* Timeline node icon */}
-              <div className={`absolute -left-6 w-6 h-6 rounded-full ${nodeBg} text-white flex items-center justify-center text-xs font-bold shadow-xs z-10 ring-4 ring-white`}>
-                {nodeIcon}
+              {/* Timeline Axis Column */}
+              <div className="flex flex-col items-center shrink-0 w-8">
+                <div className={`w-7 h-7 rounded-full ${nodeBg} text-white flex items-center justify-center text-xs font-bold shadow-xs z-10 ring-4 ring-white shrink-0 group-hover:scale-105 transition-transform`}>
+                  {nodeIcon}
+                </div>
+                <div className="w-0.5 bg-slate-200 flex-1 my-1" aria-hidden="true" />
               </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-bold text-slate-400">{distanceMeters} m</div>
-                <div className="font-bold text-sm text-slate-900 truncate">{title}</div>
-                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
-                  {description}
-                </p>
+              {/* Content with hover highlight that NEVER affects axis alignment */}
+              <div className="flex-1 min-w-0 pb-6 pt-0.5 p-2 -mt-1.5 rounded-xl group-hover:bg-slate-50 transition-colors flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] font-bold text-slate-400">{distanceMeters} m</div>
+                  <div className="font-bold text-sm text-slate-900 truncate leading-snug">{title}</div>
+                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 self-center group-hover:translate-x-0.5 transition-transform" />
               </div>
-
-              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 self-center" />
             </div>
           );
         })}
 
         {/* 3. Destination Item */}
-        <div className="relative flex items-start gap-3">
-          <div className="absolute -left-6 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold shadow-xs z-10 ring-4 ring-white">
-            🏁
+        <div className="flex items-stretch gap-3.5 group">
+          {/* Timeline Axis Column */}
+          <div className="flex flex-col items-center shrink-0 w-8">
+            <div className="w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold shadow-xs z-10 ring-4 ring-white shrink-0">
+              <Flag className="w-3.5 h-3.5" />
+            </div>
+            {/* No line below destination */}
           </div>
 
-          <div className="flex-1 min-w-0">
+          {/* Content */}
+          <div className="flex-1 min-w-0 pt-0.5">
             <div className="text-[11px] font-bold text-slate-400">
               {Math.round(route.total_distance_meters)} m
             </div>
-            <div className="font-bold text-sm text-slate-900">
+            <div className="font-bold text-sm text-slate-900 leading-snug">
               Cel: {route.steps?.[route.steps.length - 1]?.instruction || 'Punkt docelowy'}
             </div>
             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">

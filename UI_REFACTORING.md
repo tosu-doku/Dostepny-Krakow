@@ -98,19 +98,29 @@ export const THEME_COLORS = {
 * **Wysuwany dolny arkusz trasy ([`src/components/navigation/RouteTimelineSheet.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/RouteTimelineSheet.tsx)):**
   * Nagłówek *„Co czeka Cię po drodze”* z wskaźnikiem pewności trasy: `✓ Trasa 86% pewna` (na podstawie średniego `confidence_score` barier na trasie).
   * Wertykalna oś czasu ze zdarzeniami:
-    * Punkt startowy (zielony znacznik A),
+    * Precyzyjna, wycentrowana oś pionowa (`w-8 items-center`) – wyeliminowanie zjawiska braku wyrównania węzłów osi.
+    * Wektorowa ikona docelowa SVG `Flag` zamiast niestabilnego formatowania tekstu emoji.
+    * Punkt startowy (błękitny znacznik A),
     * Wykryte bariery i udogodnienia na trasie (ze zdjęciami i tagami),
     * Kolejne manewry i zmiany ulic,
-    * Punkt końcowy (fioletowy znacznik B).
+    * Punkt końcowy (czerwony znacznik flagi mety).
   * **Integracja z mową (Web Speech API):**
     * Dedykowany przycisk `🔊 Włącz opis głosowy trasy`.
     * Wykorzystuje `window.speechSynthesis` z polskim głosem (`pl-PL`), czytający kolejne manewry i ostrzeżenia o schodach/krawężnikach dla osób niedowidzących.
 
 ---
 
-### Załącznik 3: Karta „Utwórz trasę” & Modal Dostępności
+### Załącznik 3: Karta „Utwórz trasę”, Domyślny Pieszy & Widget Preferencji
+* **Domyślny profil:** Domyślnym profilem wyznaczania trasy jest **Pieszy** (`foot_walking`, optymalny czas marszu miejskiego ~4.3 km/h).
+* **Dedykowany Widget Preferencji ([`src/components/navigation/ProfilePreferenceWidget.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/ProfilePreferenceWidget.tsx)):**
+  * Szybki, dotykowy wybór 4 profili z kolorystyką spójną z modalem ustawień:
+    * 🚶 **Pieszy (Domyślny):** szmaragdowa zieleń (`bg-emerald-600`),
+    * ♿ **Wózek inwalidzki:** wyrazisty błękit (`bg-blue-600`),
+    * 👶 **Wózek dziecięcy:** pastelowy róż (`bg-pink-600`),
+    * 👁️ **Osoba niedowidząca:** ciepły bursztyn (`bg-amber-500`).
+  * Dynamiczny baner informacyjny odzwierciedlający reguły aktywnego profilu wraz z przyciskiem szybkiego przejścia do suwaków filtrów.
 * **Karta wyszukiwania trasy ([`src/components/navigation/RouteSearchCard.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/RouteSearchCard.tsx)):**
-  * Nagłówek w kolorze głębokiej śliwki/burgundu (`#4c0519`) z tekstem *„Utwórz trasę”*.
+  * Nagłówek w kolorze głębokiej śliwki/burgundu (`#4c0519`) z tekstem *„Utwórz trasę”* oraz kolorową pigułką aktywnego profilu.
   * Dwa wejścia w kształcie pigułek (`rounded-full`):
     * Punkt początkowy: zielony punkt wskaźnikowy, pole tekstowe, przycisk czyszczenia.
     * Punkt docelowy: fioletowy punkt wskaźnikowy, pole tekstowe.
@@ -118,11 +128,7 @@ export const THEME_COLORS = {
   * Przycisk suwaków (`SlidersHorizontal`) otwierający dedykowany modal preferencji dostępności.
   * Tryb manualnego wskazywania punktów na mapie chroniony checkboxem.
 * **Modal preferencji dostępności ([`src/components/navigation/AccessibilityFilterModal.tsx`](file:///home/bigguy/Desktop/projekty-kola-itp/hackyeah%202026/src/components/navigation/AccessibilityFilterModal.tsx)):**
-  * Szybki wybór profilu dostępności:
-    * ♿ *Wózek inwalidzki* (priorytet: brak schodów, niskie krawężniki, rampy),
-    * 👶 *Wózek dziecięcy* (dopuszczalne 1-2 stopnie, unikanie bruku),
-    * 🦯 *Osoba niedowidząca* (priorytet: sygnalizacja dźwiękowa, pasy fakturowe, poręcze),
-    * 🚶 *Pieszy bez barier* (optymalizacja czasu).
+  * Profile z odpowiadającymi im barwami zaznaczenia (niebieski dla wózka, zielony dla pieszego, różowy dla dziecięcego, bursztynowy dla niedowidzącego).
   * Szczegółowe filtry:
     * Maksymalna wysokość krawężnika (suwak 2 cm – 15 cm),
     * Bezwzględne omijanie schodów bez ramp,
@@ -148,11 +154,12 @@ Aplikacja mobilna posiada stały, ergonomiczny pasek dolny z 5 zakładkami:
 | :--- | :--- | :--- |
 | `src/constants/theme.ts` | **Nowy** | Centralna definicja Design Tokens (kolory, typografia, cienie, promienie). |
 | `src/components/layout/BottomNavigation.tsx` | **Nowy** | Mobilny dolny pasek nawigacyjny z 5 zakładkami i obsługą ARIA. |
-| `src/components/navigation/RouteSearchCard.tsx` | **Nowy** | Karta „Utwórz trasę” z polami-pigułkami i przyciskiem filtrów. |
-| `src/components/navigation/AccessibilityFilterModal.tsx` | **Nowy** | Modal wyboru profilu i parametrów dostępności trasy. |
+| `src/components/navigation/ProfilePreferenceWidget.tsx` | **Nowy** | Dotykowy widget wyboru profilu (domyślny Pieszy, barwy wózek=błękit, dziecięcy=róż, niedowidzący=bursztyn). |
+| `src/components/navigation/RouteSearchCard.tsx` | **Nowy** | Karta „Utwórz trasę” z polami-pigułkami, widgetem preferencji i przyciskiem filtrów. |
+| `src/components/navigation/AccessibilityFilterModal.tsx` | **Nowy** | Modal wyboru profilu i parametrów dostępności trasy ze spójną kolorystyką. |
 | `src/components/navigation/TurnBanner.tsx` | **Nowy** | Górny ciemny baner manewrów turn-by-turn. |
 | `src/components/navigation/RouteStatCards.tsx` | **Nowy** | Pływające kafelki z czasem, godziną dotarcia i dystansem. |
-| `src/components/navigation/RouteTimelineSheet.tsx` | **Nowy** | Wysuwany arkusz barier na trasie z lektorem mowy Web Speech API. |
+| `src/components/navigation/RouteTimelineSheet.tsx` | **Nowy** | Wysuwany arkusz barier z precyzyjnie wyrównaną osią pionową (`w-8 items-center`) i lektorem Web Speech API. |
 | `src/components/map/AccessibleMap.tsx` | Modyfikacja | Zielone heksagony trasy H3, pigułki przeszkód i pływające przyciski akcji. |
 | `src/components/map/mapIcons.ts` | Modyfikacja | Generator ikon Leaflet `createBarrierPillIcon` w formie zaokrąglonych etykiet. |
 | `src/app/page.tsx` | Modyfikacja | Integracja mobilnego kontenera portrait, zakładek i nowych komponentów nawigacji. |

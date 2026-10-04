@@ -56,7 +56,7 @@ export default function RoutePlanner({
   onSearchRoute,
   isLoading,
 }: RoutePlannerProps) {
-  const [profile, setProfile] = useState<NavigationProfile>('wheelchair');
+  const [profile, setProfile] = useState<NavigationProfile>('foot_walking');
   const [selectedPreset, setSelectedPreset] = useState<number>(0);
 
   // Sync inputs with startPoint and endPoint
